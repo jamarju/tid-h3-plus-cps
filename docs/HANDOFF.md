@@ -1,7 +1,7 @@
 # Handoff Document for Tidradio H3 Plus Web CPS
 
-**Last Updated:** January 22, 2026 (Session 13)
-**Status:** Write protocol WORKING! Added Write dropdown (All/Settings/Channels). Tested with FW v1.0.45.
+**Last Updated:** January 22, 2026 (Session 14)
+**Status:** Feature complete! Write dropdown, instant tooltips, bitfield debug display. Tested with FW v1.0.45.
 
 ---
 
@@ -191,4 +191,26 @@ Write button split and overlay z-index fix:
    - `WRITE_RANGES_CHANNELS`: Channels only (channel data, names, scan bitmap)
 
 4. **Created docs/thoughts.md**: Documents trade-offs for future read optimization. Conclusion: keep full 16KB reads for simplicity (no file format complexity, no data loss risks).
+
+---
+
+## Session 14 Summary
+
+Tooltip system overhaul - all tooltips now instant and informative:
+
+1. **Settings tooltips instant**: Custom JS tooltip system replaces native `title` attribute (which has ~500ms delay). Tooltips appear immediately on hover, bounded to viewport.
+
+2. **Debug bitfield tooltips**: Packed flag bytes (0xCA0-0xCAB, 0x300A, etc.) now show multiline breakdown:
+   ```
+   0x0CA1: Flags
+   Value: 0x15 (21) (binary: 00010101)
+   bit0: Voice[11] = 1
+   bit2: Beep[7] = 1
+   bit4: KeyLock[9] = 1
+   ```
+   Each bit's current value is extracted and displayed.
+
+3. **Channel header tooltips fixed**: Changed from `title` to `data-tip` attribute to prevent native browser tooltip appearing after delay (was causing double tooltip overlap).
+
+4. **CSS tooltip improvements**: Unified `.hex-tooltip` and `.settings-tooltip` styles, added `.tip-line` and `.tip-bitfield` classes for structured display.
 
