@@ -10,9 +10,34 @@ const BLE = {
 
     // Protocol constants
     MEMORY_START: 0x0000,
-    MEMORY_END: 0x4000,  // 16KB - trying to find PTT Delay, Alarm Mode, STE, etc.
+    MEMORY_END: 0x4000,  // 16KB
     CHUNK_SIZE: 32,
     TOTAL_CHANNELS: 199,
+
+    // Write ranges by mode
+    WRITE_RANGES_ALL: [
+        [0x0000, 0x13C0],  // Channels, names, settings
+        [0x1800, 0x18E0],  // Config area 1
+        [0x1900, 0x1980],  // Scan bitmap
+        [0x1C00, 0x1C40],  // Startup messages
+        [0x1F20, 0x1F40],  // Menu color, other settings
+        [0x3000, 0x3020],  // Extended: STE, PTT Delay, Alarm Mode, Talk Around
+    ],
+
+    WRITE_RANGES_SETTINGS: [
+        [0x0000, 0x0020],  // Header with modulation at 0x1F
+        [0x0C90, 0x0CB0],  // Function keys + main settings block
+        [0x1800, 0x18E0],  // Config area 1
+        [0x1C00, 0x1C40],  // Startup messages
+        [0x1F20, 0x1F40],  // Menu color, secondary settings
+        [0x3000, 0x3020],  // Extended settings (STE, PTT Delay, etc.)
+    ],
+
+    WRITE_RANGES_CHANNELS: [
+        [0x0010, 0x0C80],  // 199 channels × 16 bytes
+        [0x0D40, 0x1000],  // Channel names
+        [0x1920, 0x1940],  // Scan bitmap
+    ],
 
     // State
     device: null,
@@ -252,8 +277,9 @@ const BLE = {
      * Based on ODMaster protocol analysis - requires checksum and ACK waiting
      * @param {Uint8Array} data - Memory contents to write
      * @param {Function} onProgress - Progress callback (0-1)
+     * @param {string} mode - Write mode: 'all', 'settings', or 'channels'
      */
-    async writeMemory(data, onProgress) {
+    async writeMemory(data, onProgress, mode = 'all') {
         if (!this.connected) {
             throw new Error('Not connected');
         }
@@ -290,24 +316,29 @@ const BLE = {
         }
 
         // Step 6: Write memory in chunks with checksum
-        // ODMaster writes specific ranges with gaps - must match exactly!
-        // Writing to unmapped areas may cause radio to reject
-        const WRITE_RANGES = [
-            [0x0000, 0x13C0],  // Channels, names, settings
-            [0x1800, 0x18E0],  // Config area 1 (ODMaster skips 0x18E0)
-            [0x1900, 0x1980],  // Scan bitmap at 0x1920+ (ODMaster skips 0x1980+)
-            [0x1C00, 0x1C40],  // Startup messages (ODMaster skips 0x1C40-0x1F1F)
-            [0x1F20, 0x1F40],  // Menu color at 0x1F2A, other settings
-            [0x3000, 0x3020],  // Extended: STE, PTT Delay, Alarm Mode, Talk Around
-        ];
+        // Select write ranges based on mode
+        let writeRanges;
+        switch (mode) {
+            case 'settings':
+                writeRanges = this.WRITE_RANGES_SETTINGS;
+                console.log('Write mode: Settings only');
+                break;
+            case 'channels':
+                writeRanges = this.WRITE_RANGES_CHANNELS;
+                console.log('Write mode: Channels only');
+                break;
+            default:
+                writeRanges = this.WRITE_RANGES_ALL;
+                console.log('Write mode: All');
+        }
 
         let totalBytes = 0;
-        for (const [start, end] of WRITE_RANGES) {
+        for (const [start, end] of writeRanges) {
             totalBytes += end - start;
         }
 
         let bytesWritten = 0;
-        for (const [rangeStart, rangeEnd] of WRITE_RANGES) {
+        for (const [rangeStart, rangeEnd] of writeRanges) {
             for (let addr = rangeStart; addr < rangeEnd && addr < data.length; addr += this.CHUNK_SIZE) {
                 const addrHi = (addr >> 8) & 0xFF;
                 const addrLo = addr & 0xFF;

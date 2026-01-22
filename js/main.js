@@ -29,6 +29,8 @@ const App = {
             btnConnect: document.getElementById('btnConnect'),
             btnRead: document.getElementById('btnRead'),
             btnWrite: document.getElementById('btnWrite'),
+            btnWriteDropdown: document.getElementById('btnWriteDropdown'),
+            writeMenu: document.getElementById('writeMenu'),
             btnLoad: document.getElementById('btnLoad'),
             btnSave: document.getElementById('btnSave'),
             connectionStatus: document.getElementById('connectionStatus'),
@@ -55,7 +57,27 @@ const App = {
 
         // Read/Write
         this.elements.btnRead.addEventListener('click', () => this.handleRead());
-        this.elements.btnWrite.addEventListener('click', () => this.handleWrite());
+        this.elements.btnWrite.addEventListener('click', () => this.handleWrite('all'));
+
+        // Write dropdown
+        this.elements.btnWriteDropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.elements.writeMenu.classList.toggle('show');
+        });
+
+        this.elements.writeMenu.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const mode = btn.dataset.mode;
+                this.elements.writeMenu.classList.remove('show');
+                this.handleWrite(mode);
+            });
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', () => {
+            this.elements.writeMenu.classList.remove('show');
+        });
 
         // File operations
         this.elements.btnLoad.addEventListener('click', () => this.handleLoad());
@@ -88,6 +110,7 @@ const App = {
     updateUI() {
         this.elements.btnRead.disabled = !this.connected;
         this.elements.btnWrite.disabled = !this.connected;
+        this.elements.btnWriteDropdown.disabled = !this.connected;
 
         this.elements.connectionStatus.textContent = this.connected ? 'Connected' : 'Disconnected';
         this.elements.connectionStatus.classList.toggle('connected', this.connected);
@@ -165,8 +188,9 @@ const App = {
 
     /**
      * Handle write to radio
+     * @param {string} mode - Write mode: 'all', 'settings', or 'channels'
      */
-    async handleWrite() {
+    async handleWrite(mode = 'all') {
         if (!this.connected) return;
 
         // SAFETY: Require rawData from a prior read to preserve unmapped bytes
@@ -183,7 +207,8 @@ const App = {
                 return;
             }
 
-            this.setStatus('Writing...');
+            const modeLabels = { all: 'all', settings: 'settings', channels: 'channels' };
+            this.setStatus('Writing ' + modeLabels[mode] + '...');
             this.showProgress(true);
 
             const data = {
@@ -196,10 +221,10 @@ const App = {
 
             await BLE.writeMemory(memory, (progress) => {
                 this.setProgress(progress);
-            });
+            }, mode);
 
             this.showProgress(false);
-            this.setStatus('Write complete');
+            this.setStatus('Write complete (' + modeLabels[mode] + ')');
         } catch (err) {
             this.showProgress(false);
             this.setStatus('Write failed: ' + err.message);

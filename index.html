@@ -16,7 +16,15 @@
         <div class="header-actions">
             <button id="btnConnect" class="btn btn-primary">Connect</button>
             <button id="btnRead" class="btn" disabled>Read</button>
-            <button id="btnWrite" class="btn" disabled>Write</button>
+            <div class="btn-split">
+                <button id="btnWrite" class="btn btn-split-main" disabled>Write</button>
+                <button id="btnWriteDropdown" class="btn btn-split-arrow" disabled>▾</button>
+                <div class="btn-split-menu" id="writeMenu">
+                    <button data-mode="all">Write All</button>
+                    <button data-mode="settings">Settings Only</button>
+                    <button data-mode="channels">Channels Only</button>
+                </div>
+            </div>
             <div class="separator"></div>
             <button id="btnLoad" class="btn">Load File</button>
             <button id="btnSave" class="btn">Save File</button>

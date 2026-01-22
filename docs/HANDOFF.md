@@ -1,7 +1,7 @@
 # Handoff Document for Tidradio H3 Plus Web CPS
 
-**Last Updated:** January 22, 2026 (Session 12)
-**Status:** Write protocol WORKING! Full UI polish complete. Tested with FW v1.0.45.
+**Last Updated:** January 22, 2026 (Session 13)
+**Status:** Write protocol WORKING! Added Write dropdown (All/Settings/Channels). Tested with FW v1.0.45.
 
 ---
 
@@ -12,11 +12,12 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 **Key Files:**
 - `index.html` - Main UI with tabs (Channels, Settings, Debug)
 - `js/ble.js` - BLE protocol, `parseSettings()` and `encodeSettings()` fully updated
-- `js/debug.js` - **NEW** Hex dump viewer with memory map (436 entries)
+- `js/debug.js` - Hex dump viewer with memory map (436 entries)
 - `js/settings.js` - Settings form handling, dropdown options
 - `docs/settings-reference.md` - **SOURCE OF TRUTH** for option values
 - `docs/memory-map.md` - **Complete memory layout documentation**
 - `docs/ble-protocol.md` - BLE connection and commands
+- `docs/thoughts.md` - Future considerations (read optimization trade-offs)
 
 **Server:** `python -m http.server 8000` then open http://localhost:8000
 
@@ -87,7 +88,7 @@ All major UX issues resolved:
 
 ### Remaining Work
 
-1. **Optimize reads by skipping unknown areas** - Currently reads all 16KB. Could use READ_RANGES like WRITE_RANGES to skip unmapped regions and speed up read operations.
+1. ~~**Optimize reads by skipping unknown areas**~~ - Documented in `docs/thoughts.md`. Keeping full 16KB reads for simplicity. See trade-off analysis.
 2. **Discover additional settings** - Analog Settings (AM Vol Level) not found in 16KB
 3. **Firmware version** - Not in memory dump, likely retrieved via different command
 4. **Investigate OFFSET setting** - User reports it's NOT for frequency offset (shows "REJECT")
@@ -104,15 +105,13 @@ Reverse-engineered from ODMaster console capture. **Successfully tested** - menu
 
 **ACK:** Radio responds with `0x06` after each packet - must wait for it
 
-**Write ranges** (ODMaster skips gaps - we must match):
-```javascript
-[0x0000, 0x13C0],  // Channels, names, settings
-[0x1800, 0x18E0],  // Config area 1
-[0x1900, 0x1980],  // Scan bitmap at 0x1920+
-[0x1C00, 0x1C40],  // Startup messages
-[0x1F20, 0x1F40],  // Menu color at 0x1F2A, other settings
-[0x3000, 0x3020],  // Extended: STE, PTT Delay, Alarm Mode, Talk Around
-```
+**Write modes** (Session 13): Click Write button = Write All, or use dropdown for selective writes:
+
+| Mode | Description | Ranges |
+|------|-------------|--------|
+| **All** | Full write (default) | 0x0000-0x13C0, 0x1800-0x18E0, 0x1900-0x1980, 0x1C00-0x1C40, 0x1F20-0x1F40, 0x3000-0x3020 |
+| **Settings Only** | Settings without channels | 0x0000-0x0020 (header), 0x0C90-0x0CB0, 0x1800-0x18E0, 0x1C00-0x1C40, 0x1F20-0x1F40, 0x3000-0x3020 |
+| **Channels Only** | Channels without settings | 0x0010-0x0C80 (channels), 0x0D40-0x1000 (names), 0x1920-0x1940 (scan bitmap) |
 
 **Debug logging added** - console shows each write address and ACK status.
 
@@ -172,4 +171,24 @@ UI polish and documentation improvements:
    - DCD [35]: Enable DTMF signaling for single call, group call, etc.
    - D-HOLD [36]: DTMF auto-reset time
    - D-RSP [37]: NULL=silent, RING=ring tone, REPLY=ring + 1s call-back, BOTH=ring + call-back
+
+---
+
+## Session 13 Summary
+
+Write button split and overlay z-index fix:
+
+1. **Fixed overlay z-index glitch**: When scrolling the grid while disabled (during read), the sticky header created a stacking context conflict with the overlay. Fixed by increasing overlay z-index from 10 to 15 (higher than sticky header's 10), and panel-disabled-message to 16.
+
+2. **Write button dropdown**: Split Write button into main button + dropdown arrow:
+   - Click main button = Write All (same as before)
+   - Click dropdown arrow = menu with 3 options: Write All, Settings Only, Channels Only
+   - Each mode writes only the relevant memory ranges for faster selective updates
+
+3. **Split WRITE_RANGES in ble.js**: Defined three sets of write ranges:
+   - `WRITE_RANGES_ALL`: Full write (channels + settings + extended)
+   - `WRITE_RANGES_SETTINGS`: Settings only (function keys, config, messages, extended)
+   - `WRITE_RANGES_CHANNELS`: Channels only (channel data, names, scan bitmap)
+
+4. **Created docs/thoughts.md**: Documents trade-offs for future read optimization. Conclusion: keep full 16KB reads for simplicity (no file format complexity, no data loss risks).
 
