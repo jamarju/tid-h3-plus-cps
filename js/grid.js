@@ -20,10 +20,10 @@ const Grid = {
         { key: 'txPower', label: 'Power', type: 'select', options: ['LOW', 'HIGH'], class: 'col-power' },
         { key: 'bandwidth', label: 'BW', type: 'select', options: ['N', 'W'], class: 'col-bw' },
         { key: 'busyLock', label: 'Busy', type: 'boolean', class: 'col-busy' },
-        { key: 'pttId', label: 'PTT ID', type: 'boolean', class: 'col-pttid' },
+        { key: 'pttId', label: 'PTT ID', type: 'select', options: ['OFF', 'BOT', 'EOT', 'BOTH'], class: 'col-pttid' },
         { key: 'scanAdd', label: 'Scan', type: 'boolean', class: 'col-scan' },
         { key: 'name', label: 'Name', type: 'text', maxLength: 8, class: 'col-name' },
-        { key: 'scramble', label: 'Scram', type: 'boolean', class: 'col-scramble' }
+        { key: 'scramble', label: 'Scram', type: 'select', options: ['OFF', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16'], class: 'col-scramble' }
     ],
 
     // Tone options
@@ -124,6 +124,10 @@ const Grid = {
             case 'boolean':
                 return value ? 'ON' : 'OFF';
             default:
+                // Handle scramble: number 0 = 'OFF', 1-16 = '1'-'16'
+                if (col.key === 'scramble' && typeof value === 'number') {
+                    return value === 0 ? 'OFF' : String(value);
+                }
                 return value !== null && value !== undefined ? String(value) : '';
         }
     },
@@ -232,7 +236,12 @@ const Grid = {
                     option.textContent = opt;
                     input.appendChild(option);
                 }
-                input.value = value;
+                // Handle scramble: number 0 = 'OFF', 1-16 = '1'-'16'
+                if (col.key === 'scramble' && typeof value === 'number') {
+                    input.value = value === 0 ? 'OFF' : String(value);
+                } else {
+                    input.value = value;
+                }
                 break;
 
             case 'tone':
@@ -281,7 +290,12 @@ const Grid = {
                     newValue = rawValue === 'true';
                     break;
                 default:
-                    newValue = rawValue;
+                    // Handle scramble: 'OFF' = 0, '1'-'16' = number
+                    if (col.key === 'scramble') {
+                        newValue = rawValue === 'OFF' ? 0 : parseInt(rawValue, 10);
+                    } else {
+                        newValue = rawValue;
+                    }
             }
 
             channel[col.key] = newValue;
@@ -447,7 +461,12 @@ const Grid = {
                 channel[col.key] = '';
                 break;
             case 'select':
-                channel[col.key] = col.options[0];
+                // Handle scramble: clear to 0 (number), others to first option (string)
+                if (col.key === 'scramble') {
+                    channel[col.key] = 0;
+                } else {
+                    channel[col.key] = col.options[0];
+                }
                 break;
             case 'tone':
                 channel[col.key] = 'OFF';
@@ -516,7 +535,17 @@ const Grid = {
                     newValue = text.toLowerCase() === 'on' || text === 'true' || text === '1';
                     break;
                 case 'select':
-                    newValue = col.options.includes(text) ? text : channel[col.key];
+                    // Handle scramble paste: convert to number
+                    if (col.key === 'scramble') {
+                        if (text.toUpperCase() === 'OFF') {
+                            newValue = 0;
+                        } else {
+                            const num = parseInt(text, 10);
+                            newValue = (num >= 0 && num <= 16) ? num : channel[col.key];
+                        }
+                    } else {
+                        newValue = col.options.includes(text) ? text : channel[col.key];
+                    }
                     break;
                 case 'tone':
                     newValue = this.toneOptions.includes(text) ? text : channel[col.key];

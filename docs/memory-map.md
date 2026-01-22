@@ -1,6 +1,6 @@
 # Tidradio H3 Plus Memory Map
 
-**Last Updated:** January 22, 2026
+**Last Updated:** January 22, 2026 (Session 8)
 **Total Memory:** 16KB (0x0000-0x3FFF), but radio reports 100% at ~8KB
 
 ---
@@ -9,21 +9,21 @@
 
 Based on actual memory scan (non-0xFF bytes):
 
-| Region | Address Range | Size | Description |
-|--------|---------------|------|-------------|
-| Channels (partial) | 0x0010-0x00BF | ~176b | First channels |
-| Unknown | 0x00A0-0x00BF | ~32b | Unknown data |
-| Function Keys | 0x0C90-0x0C9D | 14b | PF1/PF2, brightness |
-| Main Settings | 0x0CA0-0x0CB7 | 24b | Core radio settings |
-| Settings cont'd | 0x0CC0-0x0CD3 | 20b | Additional settings |
-| Channel Names | 0x0D40-0x0D97 | ~88b | First names |
-| Unknown | 0x1380-0x13FF | 128b | Unknown block |
-| Channels cont'd | 0x1480-0x17FF | 896b | More channel data |
-| ANI/ID Block | 0x1820-0x182F | 16b | ANI edit, IDs |
-| Secondary Settings | 0x1900-0x1F3F | ~1.5KB | MIC gain, language, display |
-| **Extended Settings** | 0x3000-0x3113 | ~275b | STE, PTT Delay, more |
+| Region | Address Range | Size | Description | Status |
+|--------|---------------|------|-------------|--------|
+| Channels | 0x0010+ | 16b/ch | 199 channels × 16 bytes | ✅ VERIFIED |
+| Function Keys | 0x0C90-0x0C9D | 14b | PF1/PF2, brightness | ✅ VERIFIED |
+| VFO State | 0x0CA4-0x0CA5 | 2b | Current A/B channels | ✅ VERIFIED |
+| Main Settings | 0x0CA0-0x0CAF | 16b | Core radio settings | ✅ VERIFIED |
+| Channel Names | 0x0D40+ | 8b/ch | 199 names × 8 bytes | ✅ VERIFIED |
+| ANI/ID Block | 0x1820-0x182F | 16b | ANI edit, IDs | ✅ VERIFIED |
+| **Scan Bitmap** | 0x1920-0x1938 | 25b | 199 channels, 1 bit each | ✅ VERIFIED |
+| Startup Messages | 0x1C00-0x1C2F | 48b | 3 × 16-byte messages | ✅ VERIFIED |
+| Secondary Settings | 0x1F20-0x1F2A | 11b | MIC, language, display, color | ✅ VERIFIED |
+| Extended Settings | 0x3000-0x300C | 13b | STE, Alarm, PTT Delay, etc | ✅ VERIFIED |
+| Active VFO | 0x3004 | 1b | 0=A, 1=B | ✅ VERIFIED |
 
-**Key Finding:** Settings above 0x2000 exist in 0x3000 region!
+**Key Finding:** All 41 menu settings + all channel flags now mapped!
 
 ---
 
@@ -102,6 +102,15 @@ Based on actual memory scan (non-0xFF bytes):
 
 ---
 
+## VFO State (0x0CA4-0x0CA6)
+
+| Offset | Setting | Encoding |
+|--------|---------|----------|
+| 0x0CA4 | A Channel | Current channel on VFO A |
+| 0x0CA5 | B Channel | Current channel on VFO B |
+
+---
+
 ## Startup Messages (0x1C00-0x1C2F)
 
 | Offset | Size | Description |
@@ -122,6 +131,18 @@ Used when Power On Display [14] = "message"
 
 ---
 
+## Scan Bitmap (0x1920+) - VERIFIED
+
+| Offset | Channels | Encoding |
+|--------|----------|----------|
+| 0x1920 | CH1-8 | Bit 0=CH1, Bit 7=CH8; 1=Scan On, 0=Scan Off |
+| 0x1921 | CH9-16 | Same pattern |
+| ... | ... | Continues for all 199 channels |
+
+**Note:** Scan Add is NOT stored in the channel structure! It's a separate bitmap.
+
+---
+
 ## Settings Block 5: Secondary (0x1F20-0x1F3F)
 
 | Offset | Setting | Menu # | Encoding |
@@ -133,10 +154,11 @@ Used when Power On Display [14] = "message"
 
 ---
 
-## Settings Block 6: Extended (0x3000+) - NEW!
+## Settings Block 6: Extended (0x3000+) - VERIFIED
 
 | Offset | Setting | Menu # | Encoding |
 |--------|---------|--------|----------|
+| 0x3004 | Active VFO | - | 0=A, 1=B |
 | 0x300A | STE | [23] | Bit 7: (data>>7)&0x01, 0=off, 1=on |
 | 0x300A | Alarm Mode | [22] | Bits 4-5: (data>>4)&0x03, 0=on site, 2=tx alarm |
 | 0x300B | PTT Delay | [20] | Lower 6 bits: (data&0x3F), value = (raw+1)*100 ms |
@@ -160,18 +182,21 @@ Each channel is 16 bytes.
 | 10-11 | 2 | TX Tone (Encode) | BCD for CTCSS, special for DCS |
 | 12 | 1 | Flags 1 | See below |
 | 13 | 1 | Flags 2 | See below |
-| 14-15 | 2 | Unknown | Usually 0x00 |
+| 14 | 1 | Flags 3 | See below |
+| 15 | 1 | Unknown | Usually 0x00 |
 
-### Flags 1 (byte 12)
-- Bit 1 (0x02): Bandwidth (0=Narrow, 1=Wide)
-- Bit 2 (0x04): TX Power (0=Low, 1=High)
-- Bit 4 (0x10): Busy Lock (0=Off, 1=On)
-- Bit 7 (0x80): Frequency Hop (0=Off, 1=On)
+### Byte 12 - Scramble - VERIFIED
+- Value 0-16: Scramble level (0=Off, 1-16=level)
+- Note: NOT a flags byte, it's a direct value!
 
-### Flags 2 (byte 13)
-- Bit 0 (0x01): Scan Add (0=On, 1=Off) - inverted!
-- Bit 2 (0x04): PTT ID (0=Off, 1=On)
-- Bit 3 (0x08): Scramble (0=Off, 1=On)
+### Flags 2 (byte 13) - VERIFIED
+- Bit 2 (0x04): Busy Lock (0=Off, 1=On)
+- Bit 5 (0x20): Frequency Hop (0=Off, 1=On)
+- Bits 6-7: PTT ID ((data>>6)&0x03: 0=Off, 1=BOT, 2=EOT, 3=BOTH)
+
+### Flags 3 (byte 14) - VERIFIED
+- Bit 3 (0x08): Bandwidth (1=Narrow, 0=Wide) - INVERTED!
+- Bit 4 (0x10): TX Power (0=Low, 1=High)
 
 ### Frequency Encoding (BCD Little-Endian)
 
@@ -212,34 +237,63 @@ These memory regions contain data but purpose is unknown:
 
 | Address Range | Size | Notes |
 |---------------|------|-------|
-| 0x00A0-0x00A7 | 8b | Early header area |
-| 0x00AC-0x00B7 | 12b | Early header area |
-| 0x00BC-0x00BF | 4b | Early header area |
-| 0x0CC0-0x0CC7 | 8b | After main settings |
-| 0x0CD0-0x0CD3 | 4b | After main settings |
+| 0x00A0-0x00BF | 32b | Early header area (purpose unknown) |
+| 0x0CC0-0x0CD3 | 20b | After main settings (purpose unknown) |
 | 0x0D88-0x0D97 | 16b | Between names and channels |
-| 0x1380-0x13FF | 128b | Unknown block |
+| 0x1380-0x13FF | 128b | Unknown block - possibly FM presets? |
 | 0x1480-0x1483 | 4b | Before extended channels |
-| 0x180F | 1b | Before ANI area |
-| 0x181F | 1b | Before ANI area |
-| 0x1823-0x1828 | 6b | After ANI (3 extra bytes) |
-| 0x182A-0x182F | 6b | After ANI area |
-| 0x183F, 0x184F, 0x185F, 0x186F, 0x187F, 0x188F, 0x189F | 1b each | Scattered single bytes |
-| 0x18AF-0x18BF | 17b | Unknown |
-| 0x18CF | 1b | Unknown |
-| 0x18DF-0x18FF | 33b | Unknown |
-| 0x1901-0x191F | 31b | Unknown |
-| 0x1921-0x1957 | 55b | Unknown |
-| 0x195C-0x1967 | 12b | Unknown |
-| 0x196C-0x1F1F | ~1.4KB | Large unknown block (excluding 0x1C00-0x1C2F messages) |
+| 0x180F-0x182F | 33b | Around ANI area (extra IDs?) |
+| 0x183F-0x189F | scattered | Single bytes every 16 (pattern?) |
+| 0x18AF-0x18FF | ~80b | Unknown |
+| 0x1901-0x191F | 31b | Before scan bitmap |
+| 0x1939-0x1957 | ~30b | After scan bitmap |
+| 0x195C-0x1BFF | ~1.7KB | Large unknown (excl. 0x1C00-0x1C2F messages) |
 | 0x1F2B-0x1F3F | 21b | After menu color |
-| 0x3004 | 1b | Before extended settings |
 | 0x300D-0x3019 | 13b | After Talk Around |
-| 0x303C | 1b | Unknown |
-| 0x3064-0x306B | 8b | Unknown |
-| 0x307C-0x3113 | 152b | Large unknown block |
+| 0x303C-0x3113 | ~215b | Extended region unknowns |
 
-**Potential contents:** Additional channel flags, DTMF codes, scan lists, FM presets, or Analog Settings (AM Vol Level was not found in 16KB scan)
+**Potential contents:**
+- DTMF codes / ANI IDs
+- FM broadcast presets
+- Analog Settings (AM Vol Level - not found in 16KB!)
+- OFFSET setting (purpose unclear - shows "REJECT")
+
+---
+
+## Summary: What We Know vs Unknown
+
+### ✅ FULLY MAPPED (Session 8)
+
+**Settings (41 menu items):**
+- All function keys (PF1/PF2 short/long)
+- All radio settings (squelch, VOX, TOT, power save, etc.)
+- All display settings (brightness, backlight, language, color)
+- All DTMF settings (speed, DCD, D-HOLD, D-RSP, DTMFST)
+- All TX settings (modulation, tone burst, roger beep, 200/350/500Tx)
+- Extended settings (STE, alarm mode, PTT delay, talk around)
+
+**Channel Data (per channel):**
+- RX/TX frequencies (BCD little-endian)
+- RX/TX tones (CTCSS/DCS)
+- Scramble level (0-16)
+- Busy Lock, Frequency Hop
+- PTT ID (OFF/BOT/EOT/BOTH)
+- Bandwidth (N/W), TX Power (L/H)
+- Channel name (8 chars)
+
+**Other:**
+- Scan bitmap (separate from channel data!)
+- VFO A/B current channel
+- Active VFO indicator
+- Startup messages (3 × 16 chars)
+- ANI-Edit (3 digits)
+
+### ❓ STILL UNKNOWN
+
+1. **AM Vol Level** - Analog setting not found in 16KB
+2. **OFFSET setting** - Shows "REJECT" when changed, purpose unclear
+3. **Firmware version** - Not in memory, different command needed
+4. **~2KB of undocumented regions** - Could be FM presets, extra DTMF codes, etc.
 
 ---
 
@@ -250,3 +304,4 @@ These memory regions contain data but purpose is unknown:
 3. Settings scattered across multiple regions
 4. Bit numbering: LSB-first (bit 0 = 0x01, bit 7 = 0x80)
 5. Extended settings in 0x3000 region discovered Jan 2026
+6. Scan bitmap at 0x1920+ (NOT in channel structure!) discovered Jan 2026

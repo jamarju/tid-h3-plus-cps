@@ -25,12 +25,13 @@
     <nav class="tabs">
         <button class="tab active" data-tab="channels">Channels</button>
         <button class="tab" data-tab="settings">Settings</button>
+        <button class="tab" data-tab="debug">Debug</button>
     </nav>
 
     <main class="main-content">
         <section id="channelsPanel" class="panel active">
             <div class="grid-toolbar">
-                <span class="grid-info">199 Channels | Arrow keys to navigate | Enter to edit | Ctrl+C/V to copy/paste</span>
+                <span class="grid-info">199 Channels | Arrow keys to navigate | Enter to edit | Ctrl+C/V copy/paste | Ctrl+1/2/3 switch tabs</span>
             </div>
             <div class="grid-container" id="gridContainer">
                 <table class="channel-grid" id="channelGrid">
@@ -61,6 +62,14 @@
             <div class="settings-container" id="settingsContainer">
                 <div class="settings-group">
                     <h3>Display</h3>
+                    <div class="setting-row">
+                        <label for="display">Display [15]</label>
+                        <select id="display">
+                            <option value="0">Single</option>
+                            <option value="1">Dual</option>
+                            <option value="2">Classic</option>
+                        </select>
+                    </div>
                     <div class="setting-row">
                         <label for="lightControl">Backlight [12]</label>
                         <select id="lightControl">
@@ -96,12 +105,27 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="dispLcdTx">Display LCD (TX)</label>
-                        <input type="checkbox" id="dispLcdTx">
-                    </div>
-                    <div class="setting-row">
-                        <label for="dispLcdRx">Display LCD (RX)</label>
-                        <input type="checkbox" id="dispLcdRx">
+                        <label for="menuColor">Menu Color [42]</label>
+                        <select id="menuColor">
+                            <option value="0">Blue</option>
+                            <option value="1">Red</option>
+                            <option value="2">Green</option>
+                            <option value="3">Yellow</option>
+                            <option value="4">Purple</option>
+                            <option value="5">Orange</option>
+                            <option value="6">Light Blue</option>
+                            <option value="7">Cyan</option>
+                            <option value="8">Gray</option>
+                            <option value="9">Dark Blue</option>
+                            <option value="10">Light Green</option>
+                            <option value="11">Brown</option>
+                            <option value="12">Pink</option>
+                            <option value="13">B.Red</option>
+                            <option value="14">G.Blue</option>
+                            <option value="15">L.Gray</option>
+                            <option value="16">LG.Blue</option>
+                            <option value="17">LB.Blue</option>
+                        </select>
                     </div>
                 </div>
 
@@ -127,10 +151,16 @@
                         <input type="checkbox" id="voicePrompt">
                     </div>
                     <div class="setting-row">
-                        <label for="language">Language</label>
+                        <label for="language">Language [21]</label>
                         <select id="language">
                             <option value="0">English</option>
                             <option value="1">Chinese</option>
+                            <option value="2">Turkish</option>
+                            <option value="3">Russian</option>
+                            <option value="4">German</option>
+                            <option value="5">Spanish</option>
+                            <option value="6">Italian</option>
+                            <option value="7">French</option>
                         </select>
                     </div>
                     <div class="setting-row">
@@ -172,7 +202,46 @@
                 </div>
 
                 <div class="settings-group">
+                    <h3>Signal</h3>
+                    <div class="setting-row">
+                        <label for="ste">STE [23]</label>
+                        <input type="checkbox" id="ste">
+                    </div>
+                    <div class="setting-row">
+                        <label for="toneBurst">Tone Burst [24]</label>
+                        <select id="toneBurst">
+                            <option value="0">1000Hz</option>
+                            <option value="1">1450Hz</option>
+                            <option value="2">1750Hz</option>
+                            <option value="3">2100Hz</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="talkAround">Talk Around [25]</label>
+                        <input type="checkbox" id="talkAround">
+                    </div>
+                    <div class="setting-row">
+                        <label for="fmInterrupt">FM Interrupt [26]</label>
+                        <input type="checkbox" id="fmInterrupt">
+                    </div>
+                </div>
+
+                <div class="settings-group">
                     <h3>TX Settings</h3>
+                    <div class="setting-row">
+                        <label for="stepFreq">Step Freq [2]</label>
+                        <select id="stepFreq">
+                            <option value="0">2.5K</option>
+                            <option value="1">5.0K</option>
+                            <option value="2">6.25K</option>
+                            <option value="3">10K</option>
+                            <option value="4">12.5K</option>
+                            <option value="5">25K</option>
+                            <option value="6">50K</option>
+                            <option value="7">0.5K</option>
+                            <option value="8">8.33K</option>
+                        </select>
+                    </div>
                     <div class="setting-row">
                         <label for="tot">TOT [5]</label>
                         <select id="tot">
@@ -187,11 +256,38 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="priorityTx">Priority TX</label>
-                        <select id="priorityTx">
-                            <option value="0">Edit</option>
-                            <option value="1">Busy</option>
+                        <label for="pttDelay">PTT Delay [20]</label>
+                        <select id="pttDelay">
+                            <option value="0">100ms</option>
+                            <option value="1">200ms</option>
+                            <option value="2">300ms</option>
+                            <option value="3">400ms</option>
+                            <option value="4">500ms</option>
+                            <option value="5">600ms</option>
+                            <option value="6">700ms</option>
+                            <option value="7">800ms</option>
+                            <option value="8">900ms</option>
+                            <option value="9">1000ms</option>
                         </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="modulation">Modulation [38]</label>
+                        <select id="modulation">
+                            <option value="0">FM</option>
+                            <option value="1">AM</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="tx200">200Tx [39]</label>
+                        <input type="checkbox" id="tx200">
+                    </div>
+                    <div class="setting-row">
+                        <label for="tx350">350Tx [40]</label>
+                        <input type="checkbox" id="tx350">
+                    </div>
+                    <div class="setting-row">
+                        <label for="tx500">500Tx [41]</label>
+                        <input type="checkbox" id="tx500">
                     </div>
                 </div>
 
@@ -220,14 +316,6 @@
 
                 <div class="settings-group">
                     <h3>Scan</h3>
-                    <div class="setting-row">
-                        <label for="scanRev">Scan Resume</label>
-                        <select id="scanRev">
-                            <option value="0">SE (Search)</option>
-                            <option value="1">CO (Carrier)</option>
-                            <option value="2">TO (Timeout)</option>
-                        </select>
-                    </div>
                     <div class="setting-row">
                         <label for="tdr">Dual Watch [10]</label>
                         <input type="checkbox" id="tdr">
@@ -275,11 +363,10 @@
                 <div class="settings-group">
                     <h3>Alarm</h3>
                     <div class="setting-row">
-                        <label for="alarmMode">Alarm Mode</label>
+                        <label for="alarmMode">Alarm Mode [22]</label>
                         <select id="alarmMode">
-                            <option value="0">Local</option>
-                            <option value="1">Remote</option>
-                            <option value="2">Both</option>
+                            <option value="0">On Site</option>
+                            <option value="2">TX Alarm</option>
                         </select>
                     </div>
                 </div>
@@ -287,41 +374,41 @@
                 <div class="settings-group">
                     <h3>DTMF</h3>
                     <div class="setting-row">
-                        <label for="dtmfSideTone">DTMF Side Tone</label>
+                        <label for="aniEdit">ANI-Edit [16]</label>
+                        <input type="text" id="aniEdit" maxlength="3" class="text-input" pattern="[0-9]{3}" placeholder="000">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dtmfSideTone">DTMF Side Tone [19]</label>
                         <input type="checkbox" id="dtmfSideTone">
                     </div>
                     <div class="setting-row">
-                        <label for="dtmfSpeed">DTMF Speed</label>
+                        <label for="dtmfSpeed">DTMF Speed [34]</label>
                         <select id="dtmfSpeed">
-                            <option value="0">50ms</option>
-                            <option value="1">100ms</option>
-                            <option value="2">200ms</option>
-                            <option value="3">300ms</option>
-                            <option value="4">500ms</option>
+                            <option value="0">80ms</option>
+                            <option value="1">90ms</option>
+                            <option value="2">100ms</option>
+                            <option value="3">110ms</option>
+                            <option value="4">120ms</option>
+                            <option value="5">130ms</option>
+                            <option value="6">140ms</option>
+                            <option value="7">150ms</option>
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="dDcd">D-DCD</label>
+                        <label for="dDcd">DCD [35]</label>
                         <input type="checkbox" id="dDcd">
                     </div>
                     <div class="setting-row">
-                        <label for="dHold">D-HOLD</label>
+                        <label for="dHold">D-HOLD [36]</label>
                         <select id="dHold">
                             <option value="0">OFF</option>
-                            <option value="1">1S</option>
-                            <option value="2">2S</option>
-                            <option value="3">3S</option>
-                            <option value="4">4S</option>
-                            <option value="5">5S</option>
-                            <option value="6">6S</option>
-                            <option value="7">7S</option>
-                            <option value="8">8S</option>
-                            <option value="9">9S</option>
-                            <option value="10">10S</option>
+                            <option value="1">5S</option>
+                            <option value="2">10S</option>
+                            <option value="3">15S</option>
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="dRsp">D-RSP</label>
+                        <label for="dRsp">D-RSP [37]</label>
                         <select id="dRsp">
                             <option value="0">NULL</option>
                             <option value="1">RING</option>
@@ -332,45 +419,9 @@
                 </div>
 
                 <div class="settings-group">
-                    <h3>Special</h3>
+                    <h3>LED</h3>
                     <div class="setting-row">
-                        <label for="stun">Stun</label>
-                        <input type="checkbox" id="stun">
-                    </div>
-                    <div class="setting-row">
-                        <label for="kill">Kill</label>
-                        <input type="checkbox" id="kill">
-                    </div>
-                    <div class="setting-row">
-                        <label for="bl">BL</label>
-                        <input type="checkbox" id="bl">
-                    </div>
-                    <div class="setting-row">
-                        <label for="sync">SYNC</label>
-                        <input type="checkbox" id="sync">
-                    </div>
-                    <div class="setting-row">
-                        <label for="amBand">AM Band</label>
-                        <input type="checkbox" id="amBand">
-                    </div>
-                    <div class="setting-row">
-                        <label for="rpSte">RP-STE</label>
-                        <select id="rpSte">
-                            <option value="0">OFF</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10</option>
-                        </select>
-                    </div>
-                    <div class="setting-row">
-                        <label for="breathLed">[32] Breath LED</label>
+                        <label for="breathLed">Breath LED [32]</label>
                         <select id="breathLed">
                             <option value="0">OFF</option>
                             <option value="1">5s</option>
@@ -406,6 +457,17 @@
                 </div>
             </div>
         </section>
+
+        <section id="debugPanel" class="panel">
+            <div class="debug-toolbar">
+                <span class="debug-info">Memory Dump (16 KB) | <span class="legend-known">Known</span> <span class="legend-unknown">Unknown Data</span> <span class="legend-empty">Empty (0xFF)</span> | Ctrl+1/2/3 switch tabs</span>
+            </div>
+            <div class="debug-container" id="debugContainer">
+                <div class="hexdump" id="hexdump">
+                    <div class="hexdump-placeholder">Read from radio to view memory dump</div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <footer class="status-bar">
@@ -421,6 +483,7 @@
     <script src="js/ble.js"></script>
     <script src="js/grid.js"></script>
     <script src="js/settings.js"></script>
+    <script src="js/debug.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

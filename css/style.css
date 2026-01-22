@@ -494,3 +494,152 @@ body {
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     pointer-events: none;
 }
+
+/* Debug Panel */
+.debug-toolbar {
+    padding: 8px 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.debug-info {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.legend-known {
+    display: inline-block;
+    background: #aaff66;
+    color: #1a1a1a;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-left: 12px;
+    font-size: 10px;
+}
+
+.legend-unknown {
+    display: inline-block;
+    background: #ffaaaa;
+    color: #1a1a1a;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-left: 6px;
+    font-size: 10px;
+}
+
+.legend-empty {
+    display: inline-block;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-left: 6px;
+    font-size: 10px;
+}
+
+.debug-container {
+    flex: 1;
+    overflow: auto;
+    padding: 0;
+}
+
+.hexdump {
+    padding: 16px;
+    min-height: 100%;
+}
+
+.hexdump-placeholder {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 60px 20px;
+    font-size: 14px;
+}
+
+.hexdump-table {
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    width: auto;
+}
+
+.hexdump-table th {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 500;
+    padding: 6px 8px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.hexdump-table td {
+    padding: 4px 6px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.hex-offset {
+    color: var(--text-muted);
+    text-align: left !important;
+    padding-right: 16px !important;
+    font-weight: 500;
+}
+
+.hex-byte {
+    cursor: help;
+    border-radius: 2px;
+    transition: transform 0.1s ease;
+}
+
+.hex-byte:hover {
+    transform: scale(1.2);
+    z-index: 5;
+    position: relative;
+}
+
+/* Known/mapped bytes - light green */
+.hex-known {
+    background: #aaff66;
+    color: #1a1a1a;
+}
+
+/* Unknown bytes that are NOT 0xFF - light red */
+.hex-unknown {
+    background: #ffaaaa;
+    color: #1a1a1a;
+}
+
+/* Unknown bytes that are 0xFF - default/muted */
+.hex-empty {
+    color: var(--text-muted);
+}
+
+.hex-ascii {
+    text-align: left !important;
+    padding-left: 16px !important;
+    color: var(--text-secondary);
+    font-size: 11px;
+    letter-spacing: 0;
+    white-space: pre;
+}
+
+/* Instant hex tooltip */
+.hex-tooltip {
+    display: none;
+    position: fixed;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    max-width: 400px;
+    white-space: nowrap;
+}

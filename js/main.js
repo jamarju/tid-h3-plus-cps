@@ -140,6 +140,7 @@ const App = {
 
             Grid.update(data.channels);
             Settings.update(data.settings);
+            Debug.render(memory);
 
             this.showProgress(false);
             this.setStatus('Read complete - ' + memory.length + ' bytes');
@@ -202,6 +203,10 @@ const App = {
             Grid.update(result.data.channels);
             Settings.update(result.data.settings);
             this.rawData = result.data.rawData ? new Uint8Array(result.data.rawData) : null;
+
+            if (this.rawData) {
+                Debug.render(this.rawData);
+            }
 
             this.setStatus('Loaded: ' + result.filename);
         } catch (err) {
@@ -273,7 +278,7 @@ const App = {
             this.handleLoad();
         }
 
-        // Ctrl+1/2 to switch tabs
+        // Ctrl+1/2/3 to switch tabs
         if (e.ctrlKey && e.key === '1') {
             e.preventDefault();
             this.switchTab('channels');
@@ -281,6 +286,10 @@ const App = {
         if (e.ctrlKey && e.key === '2') {
             e.preventDefault();
             this.switchTab('settings');
+        }
+        if (e.ctrlKey && e.key === '3') {
+            e.preventDefault();
+            this.switchTab('debug');
         }
     },
 

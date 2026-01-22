@@ -77,50 +77,83 @@ const Settings = {
     loadToForm() {
         if (!this.settings) return;
 
-        // Selects
+        // Selects - Display
+        this.setSelectValue('display', this.settings.display);
         this.setSelectValue('lightControl', this.settings.lightControl);
         this.setSelectValue('brightness', this.settings.brightness);
         this.setSelectValue('aChannelDisp', this.settings.aChannelDisp);
         this.setSelectValue('bChannelDisp', this.settings.bChannelDisp);
+        this.setSelectValue('menuColor', this.settings.menuColor);
+
+        // Selects - Audio
         this.setSelectValue('squelchLevel', this.settings.squelchLevel);
         this.setSelectValue('language', this.settings.language);
         this.setSelectValue('roger', this.settings.roger);
         this.setSelectValue('micGain', this.settings.micGain);
         this.setSelectValue('rTone', this.settings.rTone);
+
+        // Selects - Signal
+        this.setSelectValue('toneBurst', this.settings.toneBurst);
+
+        // Selects - TX Settings
+        this.setSelectValue('stepFreq', this.settings.stepFreq);
         this.setSelectValue('tot', this.settings.tot);
-        this.setSelectValue('priorityTx', this.settings.priorityTx);
+        this.setSelectValue('pttDelay', this.settings.pttDelay);
+        this.setSelectValue('modulation', this.settings.modulation);
+
+        // Selects - VOX
         this.setSelectValue('voxGain', this.settings.voxGain);
         this.setSelectValue('voxDelay', this.settings.voxDelay);
-        this.setSelectValue('scanRev', this.settings.scanRev);
+
+        // Selects - Power Save
         this.setSelectValue('save', this.settings.save);
+
+        // Selects - Function Keys
         this.setSelectValue('shortKeyPf1', this.settings.shortKeyPf1);
         this.setSelectValue('longKeyPf1', this.settings.longKeyPf1);
         this.setSelectValue('shortKeyPf2', this.settings.shortKeyPf2);
         this.setSelectValue('longKeyPf2', this.settings.longKeyPf2);
+
+        // Selects - Alarm
         this.setSelectValue('alarmMode', this.settings.alarmMode);
+
+        // Selects - DTMF
         this.setSelectValue('dtmfSpeed', this.settings.dtmfSpeed);
         this.setSelectValue('dHold', this.settings.dHold);
         this.setSelectValue('dRsp', this.settings.dRsp);
-        this.setSelectValue('rpSte', this.settings.rpSte);
-        this.setSelectValue('breathLed', this.settings.breathLed);
+
+        // Selects - Power On Message
         this.setSelectValue('ponmgs', this.settings.ponmgs);
 
-        // Checkboxes
-        this.setCheckboxValue('dispLcdTx', this.settings.dispLcdTx);
-        this.setCheckboxValue('dispLcdRx', this.settings.dispLcdRx);
+        // Selects - LED
+        this.setSelectValue('breathLed', this.settings.breathLed);
+
+        // Checkboxes - Audio
         this.setCheckboxValue('voicePrompt', this.settings.voicePrompt);
         this.setCheckboxValue('beep', this.settings.beep);
+
+        // Checkboxes - Signal
+        this.setCheckboxValue('ste', this.settings.ste);
+        this.setCheckboxValue('talkAround', this.settings.talkAround);
+        this.setCheckboxValue('fmInterrupt', this.settings.fmInterrupt);
+
+        // Checkboxes - TX
+        this.setCheckboxValue('tx200', this.settings.tx200);
+        this.setCheckboxValue('tx350', this.settings.tx350);
+        this.setCheckboxValue('tx500', this.settings.tx500);
+
+        // Checkboxes - Scan
         this.setCheckboxValue('tdr', this.settings.tdr);
+
+        // Checkboxes - Power Save
         this.setCheckboxValue('autoLock', this.settings.autoLock);
+
+        // Checkboxes - DTMF
         this.setCheckboxValue('dtmfSideTone', this.settings.dtmfSideTone);
         this.setCheckboxValue('dDcd', this.settings.dDcd);
-        this.setCheckboxValue('stun', this.settings.stun);
-        this.setCheckboxValue('kill', this.settings.kill);
-        this.setCheckboxValue('bl', this.settings.bl);
-        this.setCheckboxValue('sync', this.settings.sync);
-        this.setCheckboxValue('amBand', this.settings.amBand);
 
         // Text inputs
+        this.setTextValue('aniEdit', this.settings.aniEdit);
         this.setTextValue('msg1', this.settings.msg1);
         this.setTextValue('msg2', this.settings.msg2);
         this.setTextValue('msg3', this.settings.msg3);

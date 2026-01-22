@@ -176,10 +176,10 @@ const Storage = {
             txPower: 'HIGH',
             bandwidth: 'W',
             busyLock: false,
-            pttId: false,
+            pttId: 'OFF',        // OFF, BOT, EOT, BOTH
             scanAdd: true,
             name: '',
-            scramble: false
+            scramble: 0          // 0=off, 1-16=level
         };
     },
 

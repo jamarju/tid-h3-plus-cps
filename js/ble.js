@@ -312,9 +312,17 @@ const BLE = {
         const rxTone = (data[offset + 8] | (data[offset + 9] << 8));
         const txTone = (data[offset + 10] | (data[offset + 11] << 8));
 
-        // Bytes 12-15: Flags
-        const flags1 = data[offset + 12] || 0;
+        // Bytes 12-14: Channel flags (VERIFIED mapping Jan 2026)
+        // Byte 12: Scramble value (0=off, 1-16=level)
+        // Byte 13: bit 2=Busy Lock, bit 5=Freq Hop, bits 6-7=PTT ID
+        // Byte 14: bit 3=Bandwidth (inverted), bit 4=Power
+        const scrambleVal = data[offset + 12] || 0;
         const flags2 = data[offset + 13] || 0;
+        const flags3 = data[offset + 14] || 0;
+
+        // PTT ID: bits 6-7 of byte 13 (0=Off, 1=BOT, 2=EOT, 3=BOTH)
+        const pttIdVal = (flags2 >> 6) & 0x03;
+        const pttIdMap = ['OFF', 'BOT', 'EOT', 'BOTH'];
 
         // Parse name from separate memory location (8 bytes)
         let name = '';
@@ -326,20 +334,26 @@ const BLE = {
             }
         }
 
+        // Scan Add is stored in bitmap at 0x1920+, not in channel structure
+        // Will be populated separately after parsing all channels
+        const scanByteOffset = 0x1920 + Math.floor((channelNum - 1) / 8);
+        const scanBitMask = 1 << ((channelNum - 1) % 8);
+        const scanAdd = !!(data[scanByteOffset] & scanBitMask);
+
         return {
             channel: channelNum,
             rxFreq: rxFreq,
             txFreq: txFreq,
-            frequencyHop: !!(flags1 & 0x80),
+            frequencyHop: !!(flags2 & 0x20),        // Byte 13, bit 5
             decode: this.decodeTone(rxTone),
             encode: this.decodeTone(txTone),
-            txPower: (flags1 & 0x04) ? 'HIGH' : 'LOW',
-            bandwidth: (flags1 & 0x02) ? 'W' : 'N',
-            busyLock: !!(flags1 & 0x10),
-            pttId: !!(flags2 & 0x04),
-            scanAdd: !(flags2 & 0x01),
+            txPower: (flags3 & 0x10) ? 'HIGH' : 'LOW',  // Byte 14, bit 4
+            bandwidth: (flags3 & 0x08) ? 'N' : 'W',     // Byte 14, bit 3 (inverted: 1=N, 0=W)
+            busyLock: !!(flags2 & 0x04),            // Byte 13, bit 2
+            pttId: pttIdMap[pttIdVal],              // Byte 13, bits 6-7
+            scanAdd: scanAdd,                       // From bitmap at 0x1920+
             name: name.trim(),
-            scramble: !!(flags2 & 0x08)
+            scramble: scrambleVal                   // Byte 12, value 0-16
         };
     },
 
@@ -658,6 +672,18 @@ const BLE = {
             this.encodeChannelName(buffer, nameOffset, data.channels[i].name);
         }
 
+        // Encode scan bitmap (0x1920+, 1 bit per channel, 1=on, 0=off)
+        const SCAN_BITMAP_START = 0x1920;
+        for (let i = 0; i < data.channels.length; i++) {
+            const byteOffset = SCAN_BITMAP_START + Math.floor(i / 8);
+            const bitMask = 1 << (i % 8);
+            if (data.channels[i].scanAdd) {
+                buffer[byteOffset] |= bitMask;   // Set bit (scan on)
+            } else {
+                buffer[byteOffset] &= ~bitMask;  // Clear bit (scan off)
+            }
+        }
+
         // Encode settings
         const settingsOffset = 0x0C90;
         this.encodeSettings(buffer, settingsOffset, data.settings);
@@ -706,22 +732,29 @@ const BLE = {
         buffer[offset + 10] = txTone & 0xFF;
         buffer[offset + 11] = (txTone >> 8) & 0xFF;
 
-        // Encode flags
-        let flags1 = 0;
-        if (channel.frequencyHop) flags1 |= 0x80;
-        if (channel.bandwidth === 'W') flags1 |= 0x02;
-        if (channel.txPower === 'HIGH') flags1 |= 0x04;
-        if (channel.busyLock) flags1 |= 0x10;
+        // Encode flags (VERIFIED mapping Jan 2026)
+        // Byte 12: Scramble value (0=off, 1-16=level)
+        const scrambleVal = typeof channel.scramble === 'number' ? channel.scramble : 0;
+        buffer[offset + 12] = scrambleVal & 0x1F; // 0-16 fits in 5 bits
 
+        // Byte 13: bit 2=Busy Lock, bit 5=Freq Hop, bits 6-7=PTT ID
         let flags2 = 0;
-        if (!channel.scanAdd) flags2 |= 0x01;
-        if (channel.pttId) flags2 |= 0x04;
-        if (channel.scramble) flags2 |= 0x08;
-
-        buffer[offset + 12] = flags1;
+        if (channel.busyLock) flags2 |= 0x04;      // Bit 2
+        if (channel.frequencyHop) flags2 |= 0x20;  // Bit 5
+        // PTT ID: bits 6-7 (0=Off, 1=BOT, 2=EOT, 3=BOTH)
+        const pttIdMap = { 'OFF': 0, 'BOT': 1, 'EOT': 2, 'BOTH': 3 };
+        const pttIdVal = pttIdMap[channel.pttId] || 0;
+        flags2 |= (pttIdVal << 6);
         buffer[offset + 13] = flags2;
-        buffer[offset + 14] = 0x00;
-        buffer[offset + 15] = 0x08; // Default value observed
+
+        // Byte 14: bit 3=Bandwidth (inverted: 1=N, 0=W), bit 4=Power
+        let flags3 = 0;
+        if (channel.bandwidth === 'N') flags3 |= 0x08;  // Bit 3 (inverted)
+        if (channel.txPower === 'HIGH') flags3 |= 0x10; // Bit 4
+        buffer[offset + 14] = flags3;
+
+        buffer[offset + 15] = 0x00;
+        // Note: Scan Add is stored in bitmap at 0x1920+, encoded separately
     },
 
     /**
