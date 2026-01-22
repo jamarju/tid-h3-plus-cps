@@ -1,7 +1,7 @@
 # Handoff Document for Tidradio H3 Plus Web CPS
 
-**Last Updated:** January 22, 2026 (Session 11)
-**Status:** Write protocol WORKING! Grid UX improvements complete.
+**Last Updated:** January 22, 2026 (Session 12)
+**Status:** Write protocol WORKING! Full UI polish complete. Tested with FW v1.0.45.
 
 ---
 
@@ -150,4 +150,26 @@ Additional improvements:
 8. **Grid disabled state**: Grid shows overlay and message when no data loaded or during read operations
    - CSS: `.grid-container.disabled` with overlay and `.grid-disabled-message`
    - JS: `App.isReading` state, `App.updateGridState()` method
+
+---
+
+## Session 12 Summary
+
+UI polish and documentation improvements:
+
+1. **Panel disabled states**: All three panels (Grid, Settings, Debug) now show disabled overlay with centered message when no data loaded or during read. Uses `overflow: hidden` when disabled to keep message centered.
+
+2. **Settings tooltips**: Added hover tooltips explaining ALL settings in the Settings panel. Labels with titles show help cursor.
+
+3. **Consistent index format**: Changed from mixed `Label [X]` / `[X] Label` to consistent `<span class="setting-index">XX</span> Label` format. Numbers are zero-padded (01, 02, etc.) and displayed in styled monospace boxes.
+
+4. **Removed R-TONE**: Was in UI but never mapped to any memory address - dead setting removed from HTML, settings.js, storage.js, ble.js.
+
+5. **Firmware version note**: Added "Tested: FW v1.0.45" badge in header with tooltip.
+
+6. **DTMF setting clarifications** (from user):
+   - FM Interrupt [26]: OFF = allow incoming calls to interrupt FM radio mode
+   - DCD [35]: Enable DTMF signaling for single call, group call, etc.
+   - D-HOLD [36]: DTMF auto-reset time
+   - D-RSP [37]: NULL=silent, RING=ring tone, REPLY=ring + 1s call-back, BOTH=ring + call-back
 
