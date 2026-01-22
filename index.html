@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tidradio H3 Plus - Web CPS</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <h1>Tidradio H3 Plus CPS</h1>
+            <span class="connection-status" id="connectionStatus">Disconnected</span>
+        </div>
+        <div class="header-actions">
+            <button id="btnConnect" class="btn btn-primary">Connect</button>
+            <button id="btnRead" class="btn" disabled>Read</button>
+            <button id="btnWrite" class="btn" disabled>Write</button>
+            <div class="separator"></div>
+            <button id="btnLoad" class="btn">Load File</button>
+            <button id="btnSave" class="btn">Save File</button>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <button class="tab active" data-tab="channels">Channels</button>
+        <button class="tab" data-tab="settings">Settings</button>
+    </nav>
+
+    <main class="main-content">
+        <section id="channelsPanel" class="panel active">
+            <div class="grid-toolbar">
+                <span class="grid-info">199 Channels | Arrow keys to navigate | Enter to edit | Ctrl+C/V to copy/paste</span>
+            </div>
+            <div class="grid-container" id="gridContainer">
+                <table class="channel-grid" id="channelGrid">
+                    <thead>
+                        <tr>
+                            <th class="col-ch" title="Channel number (1-199)">CH</th>
+                            <th class="col-rxfreq" title="Receive frequency in MHz - the frequency you listen on">RX Freq</th>
+                            <th class="col-txfreq" title="Transmit frequency in MHz - the frequency you transmit on (same as RX for simplex)">TX Freq</th>
+                            <th class="col-hop" title="Frequency Hopping - enables spread spectrum hopping (both radios must match)">Hop</th>
+                            <th class="col-decode" title="RX CTCSS/DCS tone - only opens squelch when this tone is received (privacy code)">Decode(RX)</th>
+                            <th class="col-encode" title="TX CTCSS/DCS tone - transmits this tone so others with matching Decode can hear you">Encode(TX)</th>
+                            <th class="col-power" title="Transmit power: LOW (~1W) for short range/battery saving, HIGH (~5W) for longer range">Power</th>
+                            <th class="col-bw" title="Bandwidth: N=Narrow (12.5kHz) for digital/PMR446, W=Wide (25kHz) for analog amateur">BW</th>
+                            <th class="col-busy" title="Busy Channel Lockout - prevents transmitting when channel is in use">Busy</th>
+                            <th class="col-pttid" title="PTT ID - sends DTMF identification when you press/release PTT">PTT ID</th>
+                            <th class="col-scan" title="Include this channel in scan list when scanning">Scan</th>
+                            <th class="col-name" title="Channel name (up to 8 characters) displayed on radio screen">Name</th>
+                            <th class="col-scramble" title="Voice scrambling - both radios must have same setting to communicate">Scram</th>
+                        </tr>
+                    </thead>
+                    <tbody id="channelBody">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="settingsPanel" class="panel">
+            <div class="settings-container" id="settingsContainer">
+                <div class="settings-group">
+                    <h3>Display</h3>
+                    <div class="setting-row">
+                        <label for="lightControl">Backlight [12]</label>
+                        <select id="lightControl">
+                            <option value="0">Always On</option>
+                            <option value="1">5S</option>
+                            <option value="2">10S</option>
+                            <option value="3">15S</option>
+                            <option value="4">30S</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="brightness">Brightness [13]</label>
+                        <select id="brightness">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="aChannelDisp">Display Type-A [17]</label>
+                        <select id="aChannelDisp">
+                            <option value="0">Freq + Number</option>
+                            <option value="1">Name + Number</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="bChannelDisp">Display Type-B [18]</label>
+                        <select id="bChannelDisp">
+                            <option value="0">Freq + Number</option>
+                            <option value="1">Name + Number</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="dispLcdTx">Display LCD (TX)</label>
+                        <input type="checkbox" id="dispLcdTx">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dispLcdRx">Display LCD (RX)</label>
+                        <input type="checkbox" id="dispLcdRx">
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Audio</h3>
+                    <div class="setting-row">
+                        <label for="squelchLevel">Squelch Level [1]</label>
+                        <select id="squelchLevel">
+                            <option value="0">OFF</option>
+                            <option value="1">Level 1</option>
+                            <option value="2">Level 2</option>
+                            <option value="3">Level 3</option>
+                            <option value="4">Level 4</option>
+                            <option value="5">Level 5</option>
+                            <option value="6">Level 6</option>
+                            <option value="7">Level 7</option>
+                            <option value="8">Level 8</option>
+                            <option value="9">Level 9</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="voicePrompt">Voice [11]</label>
+                        <input type="checkbox" id="voicePrompt">
+                    </div>
+                    <div class="setting-row">
+                        <label for="language">Language</label>
+                        <select id="language">
+                            <option value="0">English</option>
+                            <option value="1">Chinese</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="beep">Keypad Beep [7]</label>
+                        <input type="checkbox" id="beep">
+                    </div>
+                    <div class="setting-row">
+                        <label for="roger">Roger Beep [6]</label>
+                        <select id="roger">
+                            <option value="0">OFF</option>
+                            <option value="1">TONE1</option>
+                            <option value="2">TONE2</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="micGain">[33] MIC Gain</label>
+                        <select id="micGain">
+                            <option value="0">00</option>
+                            <option value="1">01</option>
+                            <option value="2">02</option>
+                            <option value="3">03</option>
+                            <option value="4">04</option>
+                            <option value="5">05</option>
+                            <option value="6">06</option>
+                            <option value="7">07</option>
+                            <option value="8">08</option>
+                            <option value="9">09</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="rTone">R-TONE</label>
+                        <select id="rTone">
+                            <option value="0">1000Hz</option>
+                            <option value="1">1450Hz</option>
+                            <option value="2">1750Hz</option>
+                            <option value="3">2100Hz</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>TX Settings</h3>
+                    <div class="setting-row">
+                        <label for="tot">TOT [5]</label>
+                        <select id="tot">
+                            <option value="0">OFF</option>
+                            <option value="1">30S</option>
+                            <option value="2">60S</option>
+                            <option value="3">90S</option>
+                            <option value="4">120S</option>
+                            <option value="5">150S</option>
+                            <option value="6">180S</option>
+                            <option value="7">210S</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="priorityTx">Priority TX</label>
+                        <select id="priorityTx">
+                            <option value="0">Edit</option>
+                            <option value="1">Busy</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>VOX</h3>
+                    <div class="setting-row">
+                        <label for="voxGain">VOX Level [3]</label>
+                        <select id="voxGain">
+                            <option value="0">OFF</option>
+                            <option value="1">Level 1</option>
+                            <option value="2">Level 2</option>
+                            <option value="3">Level 3</option>
+                            <option value="4">Level 4</option>
+                            <option value="5">Level 5</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="voxDelay">VOX Delay [4]</label>
+                        <select id="voxDelay">
+                            <option value="0">1.0S</option>
+                            <option value="1">2.0S</option>
+                            <option value="2">3.0S</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Scan</h3>
+                    <div class="setting-row">
+                        <label for="scanRev">Scan Resume</label>
+                        <select id="scanRev">
+                            <option value="0">SE (Search)</option>
+                            <option value="1">CO (Carrier)</option>
+                            <option value="2">TO (Timeout)</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="tdr">Dual Watch [10]</label>
+                        <input type="checkbox" id="tdr">
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Power Save</h3>
+                    <div class="setting-row">
+                        <label for="save">Power Save [8]</label>
+                        <select id="save">
+                            <option value="0">OFF</option>
+                            <option value="1">Level 1 (1:1)</option>
+                            <option value="2">Level 2 (1:2)</option>
+                            <option value="3">Level 3 (1:3)</option>
+                            <option value="4">Level 4 (1:4)</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="autoLock">Keypad Lock [9]</label>
+                        <input type="checkbox" id="autoLock">
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Function Keys</h3>
+                    <div class="setting-row">
+                        <label for="shortKeyPf1">[27] PF1 Short Press</label>
+                        <select id="shortKeyPf1" class="key-select"></select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="longKeyPf1">[28] PF1 Long Press</label>
+                        <select id="longKeyPf1" class="key-select"></select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="shortKeyPf2">[29] PF2 Short Press</label>
+                        <select id="shortKeyPf2" class="key-select"></select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="longKeyPf2">[30] PF2 Long Press</label>
+                        <select id="longKeyPf2" class="key-select"></select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Alarm</h3>
+                    <div class="setting-row">
+                        <label for="alarmMode">Alarm Mode</label>
+                        <select id="alarmMode">
+                            <option value="0">Local</option>
+                            <option value="1">Remote</option>
+                            <option value="2">Both</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>DTMF</h3>
+                    <div class="setting-row">
+                        <label for="dtmfSideTone">DTMF Side Tone</label>
+                        <input type="checkbox" id="dtmfSideTone">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dtmfSpeed">DTMF Speed</label>
+                        <select id="dtmfSpeed">
+                            <option value="0">50ms</option>
+                            <option value="1">100ms</option>
+                            <option value="2">200ms</option>
+                            <option value="3">300ms</option>
+                            <option value="4">500ms</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="dDcd">D-DCD</label>
+                        <input type="checkbox" id="dDcd">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dHold">D-HOLD</label>
+                        <select id="dHold">
+                            <option value="0">OFF</option>
+                            <option value="1">1S</option>
+                            <option value="2">2S</option>
+                            <option value="3">3S</option>
+                            <option value="4">4S</option>
+                            <option value="5">5S</option>
+                            <option value="6">6S</option>
+                            <option value="7">7S</option>
+                            <option value="8">8S</option>
+                            <option value="9">9S</option>
+                            <option value="10">10S</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="dRsp">D-RSP</label>
+                        <select id="dRsp">
+                            <option value="0">NULL</option>
+                            <option value="1">RING</option>
+                            <option value="2">REPLY</option>
+                            <option value="3">BOTH</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Special</h3>
+                    <div class="setting-row">
+                        <label for="stun">Stun</label>
+                        <input type="checkbox" id="stun">
+                    </div>
+                    <div class="setting-row">
+                        <label for="kill">Kill</label>
+                        <input type="checkbox" id="kill">
+                    </div>
+                    <div class="setting-row">
+                        <label for="bl">BL</label>
+                        <input type="checkbox" id="bl">
+                    </div>
+                    <div class="setting-row">
+                        <label for="sync">SYNC</label>
+                        <input type="checkbox" id="sync">
+                    </div>
+                    <div class="setting-row">
+                        <label for="amBand">AM Band</label>
+                        <input type="checkbox" id="amBand">
+                    </div>
+                    <div class="setting-row">
+                        <label for="rpSte">RP-STE</label>
+                        <select id="rpSte">
+                            <option value="0">OFF</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="breathLed">[32] Breath LED</label>
+                        <select id="breathLed">
+                            <option value="0">OFF</option>
+                            <option value="1">5s</option>
+                            <option value="2">10s</option>
+                            <option value="3">15s</option>
+                            <option value="4">30s</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Power On Message</h3>
+                    <div class="setting-row">
+                        <label for="ponmgs">PONMGS</label>
+                        <select id="ponmgs">
+                            <option value="0">OFF</option>
+                            <option value="1">MSG</option>
+                            <option value="2">Voltage</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="msg1">MSG1</label>
+                        <input type="text" id="msg1" maxlength="16" class="text-input">
+                    </div>
+                    <div class="setting-row">
+                        <label for="msg2">MSG2</label>
+                        <input type="text" id="msg2" maxlength="16" class="text-input">
+                    </div>
+                    <div class="setting-row">
+                        <label for="msg3">MSG3</label>
+                        <input type="text" id="msg3" maxlength="16" class="text-input">
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="status-bar">
+        <span id="statusMessage">Ready</span>
+        <div class="progress-container" id="progressContainer" style="display: none;">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </footer>
+
+    <input type="file" id="fileInput" accept=".json,.h3p" style="display: none;">
+
+    <script src="js/storage.js"></script>
+    <script src="js/ble.js"></script>
+    <script src="js/grid.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
