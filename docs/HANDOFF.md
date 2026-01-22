@@ -1,7 +1,7 @@
 # Handoff Document for Tidradio H3 Plus Web CPS
 
-**Last Updated:** January 22, 2026 (Session 14)
-**Status:** Feature complete! Write dropdown, instant tooltips, bitfield debug display. Tested with FW v1.0.45.
+**Last Updated:** January 22, 2026
+**Status:** Feature complete. Tested with FW v1.0.45.
 
 ---
 
@@ -11,11 +11,11 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 
 **Key Files:**
 - `index.html` - Main UI with tabs (Channels, Settings, Debug)
-- `js/ble.js` - BLE protocol, `parseSettings()` and `encodeSettings()` fully updated
+- `js/ble.js` - BLE protocol, `parseSettings()` and `encodeSettings()`
 - `js/debug.js` - Hex dump viewer with memory map (436 entries)
 - `js/settings.js` - Settings form handling, dropdown options
 - `docs/settings-reference.md` - **SOURCE OF TRUTH** for option values
-- `docs/memory-map.md` - **Complete memory layout documentation**
+- `docs/memory-map.md` - Complete memory layout documentation
 - `docs/ble-protocol.md` - BLE connection and commands
 - `docs/thoughts.md` - Future considerations (read optimization trade-offs)
 
@@ -25,15 +25,27 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 
 ---
 
+## Remaining Work
+
+1. **Verify DTCS subtone encoding** - Not sure if DCS codes are properly encoded. Radio has options for normal and reversed polarity (DCS-N vs DCS-I) - need to verify these work correctly.
+
+2. **Discover additional settings** - Analog Settings (AM Vol Level) not found in 16KB dump.
+
+3. **Firmware version** - Not in memory dump, likely retrieved via different BLE command.
+
+4. **Investigate OFFSET setting** - User reports it's NOT for frequency offset (shows "REJECT").
+
+5. **STUN/KILL settings** - Placeholder fields exist in code but memory offsets not discovered.
+
+---
+
 ## Debug Tab
 
 The Debug tab shows an annotated hex dump of the 16KB memory:
 - **Green (#aaff66)**: Known/mapped bytes
 - **Red (#ffaaaa)**: Unknown bytes with data (not 0xFF) - investigate these!
 - **Gray**: Empty (0xFF)
-- **Hover**: Instant tooltip with address, description, value
-
-The memory map in `js/debug.js` has 436 entries covering all channels, names, settings, scan bitmap, etc.
+- **Hover**: Instant tooltip with address, description, value (bitfields show per-bit breakdown)
 
 **Browser cache gotcha:** If CSS changes don't show, hard refresh with **Ctrl+Shift+R**.
 
@@ -41,7 +53,7 @@ The memory map in `js/debug.js` has 436 entries covering all channels, names, se
 
 ## Discovery Procedure
 
-**Human + Claude Agent workflow for discovering new setting offsets:**
+**Human + Claude workflow for discovering new setting offsets:**
 
 | Step | Who | Action |
 |------|-----|--------|
@@ -52,7 +64,7 @@ The memory map in `js/debug.js` has 436 entries covering all channels, names, se
 | 5 | Human | Click **Read** in the app, tell Claude "done" |
 | 6 | **Claude** | Run comparison script (below), report offset |
 
-**Comparison script (Claude runs this):**
+**Comparison script:**
 ```javascript
 var before = window.memBefore; var after = App.rawData; var changes = [];
 for(var i=0; i<after.length; i++) if(before[i] !== after[i])
@@ -61,43 +73,13 @@ window.memBefore = Array.from(after); // auto-save for next iteration
 changes.length ? changes.join(", ") : "No changes detected"
 ```
 
-When discovering a setting, look up the Options column in `settings-reference.md` to map index→value correctly.
+When discovering a setting, look up the Options column in `settings-reference.md` to map index to value correctly.
 
 ---
 
-## Remaining Work
+## Write Protocol
 
-### Grid UI - FIXED (Session 11)
-
-All major UX issues resolved:
-- ✅ Boolean cells toggle on single click
-- ✅ Arrow key navigation works after click/edit (using event capturing)
-- ✅ Enter key auto-expands dropdowns (via showPicker API)
-- ✅ Double-click dropdown works properly (click timing detection)
-- ✅ Focus restored after editing completes
-- ✅ Select change commits immediately and moves down
-
-### What Works Well
-- Typing in free text cells immediately starts editing ✓
-- Ctrl+C / Ctrl+V between cells works, even for dropdowns ✓
-- Tab navigation between cells ✓
-- Single-click toggles boolean cells (Hop, Busy, Scan) ✓
-- Arrow keys navigate between cells ✓
-- Enter/double-click on dropdowns auto-expands options ✓
-- Selecting dropdown option commits and moves to next row ✓
-
-### Remaining Work
-
-1. ~~**Optimize reads by skipping unknown areas**~~ - Documented in `docs/thoughts.md`. Keeping full 16KB reads for simplicity. See trade-off analysis.
-2. **Discover additional settings** - Analog Settings (AM Vol Level) not found in 16KB
-3. **Firmware version** - Not in memory dump, likely retrieved via different command
-4. **Investigate OFFSET setting** - User reports it's NOT for frequency offset (shows "REJECT")
-
----
-
-## Write Protocol (Session 10) - TESTED & WORKING
-
-Reverse-engineered from ODMaster console capture. **Successfully tested** - menu color, startup messages, and most channel settings save correctly.
+Reverse-engineered from ODMaster console capture. Successfully tested.
 
 **Packet format:** `W + addrHi + addrLo + 0x20 + data[32] + checksum`
 
@@ -105,112 +87,22 @@ Reverse-engineered from ODMaster console capture. **Successfully tested** - menu
 
 **ACK:** Radio responds with `0x06` after each packet - must wait for it
 
-**Write modes** (Session 13): Click Write button = Write All, or use dropdown for selective writes:
+**Write modes:** Click Write button = Write All, or use dropdown for selective writes:
 
-| Mode | Description | Ranges |
-|------|-------------|--------|
-| **All** | Full write (default) | 0x0000-0x13C0, 0x1800-0x18E0, 0x1900-0x1980, 0x1C00-0x1C40, 0x1F20-0x1F40, 0x3000-0x3020 |
-| **Settings Only** | Settings without channels | 0x0000-0x0020 (header), 0x0C90-0x0CB0, 0x1800-0x18E0, 0x1C00-0x1C40, 0x1F20-0x1F40, 0x3000-0x3020 |
-| **Channels Only** | Channels without settings | 0x0010-0x0C80 (channels), 0x0D40-0x1000 (names), 0x1920-0x1940 (scan bitmap) |
+| Mode | Description |
+|------|-------------|
+| **All** | Full write - channels + settings + extended |
+| **Settings Only** | Settings without channels |
+| **Channels Only** | Channels without settings |
 
-**Debug logging added** - console shows each write address and ACK status.
-
-See `docs/ble-protocol.md` for full ODMaster capture with Chinese→English translations.
+See `docs/ble-protocol.md` for full protocol details.
 
 ---
 
-## Session 10 Summary
+## DTMF Settings Reference
 
-1. Reverse-engineered write protocol from ODMaster console capture
-2. Added checksum calculation (sum of data bytes mod 256)
-3. Added ACK waiting after each write packet
-4. Discovered ODMaster writes specific ranges with gaps (not all 16KB)
-5. Added safety check: must Read before Write (preserves unknown bytes)
-6. Added debug logging for write operations
-7. **TESTED**: Settings (menu color, startup messages) save successfully
-8. **ISSUE FOUND**: Grid UI doesn't reliably capture boolean edits (scan add) - UI polish needed
-
----
-
-## Session 11 Summary
-
-Fixed all major Grid UI/UX issues in `js/grid.js`:
-
-1. **Boolean single-click toggle**: Added `toggleBoolean()` method, click handler detects boolean columns and toggles directly
-2. **Arrow key navigation**: Changed keydown listener to use capturing phase (`true` third arg) to handle events before browser defaults
-3. **Focus restoration**: `stopEditing()` now calls `focusCell()` to restore keyboard navigation
-4. **Auto-expand dropdowns**: Using `showPicker()` API on select elements when entering edit mode
-5. **Double-click fix**: Added click timing detection to prevent single-click handler from interfering with double-clicks
-6. **Input event handlers**: Added blur handler (with delay) and change handler for selects to auto-commit on selection
-
-Additional improvements:
-
-7. **Added 0x3000 write range**: Extended settings (STE, PTT Delay, Alarm Mode, Talk Around) now written to radio
-8. **Grid disabled state**: Grid shows overlay and message when no data loaded or during read operations
-   - CSS: `.grid-container.disabled` with overlay and `.grid-disabled-message`
-   - JS: `App.isReading` state, `App.updateGridState()` method
-
----
-
-## Session 12 Summary
-
-UI polish and documentation improvements:
-
-1. **Panel disabled states**: All three panels (Grid, Settings, Debug) now show disabled overlay with centered message when no data loaded or during read. Uses `overflow: hidden` when disabled to keep message centered.
-
-2. **Settings tooltips**: Added hover tooltips explaining ALL settings in the Settings panel. Labels with titles show help cursor.
-
-3. **Consistent index format**: Changed from mixed `Label [X]` / `[X] Label` to consistent `<span class="setting-index">XX</span> Label` format. Numbers are zero-padded (01, 02, etc.) and displayed in styled monospace boxes.
-
-4. **Removed R-TONE**: Was in UI but never mapped to any memory address - dead setting removed from HTML, settings.js, storage.js, ble.js.
-
-5. **Firmware version note**: Added "Tested: FW v1.0.45" badge in header with tooltip.
-
-6. **DTMF setting clarifications** (from user):
-   - FM Interrupt [26]: OFF = allow incoming calls to interrupt FM radio mode
-   - DCD [35]: Enable DTMF signaling for single call, group call, etc.
-   - D-HOLD [36]: DTMF auto-reset time
-   - D-RSP [37]: NULL=silent, RING=ring tone, REPLY=ring + 1s call-back, BOTH=ring + call-back
-
----
-
-## Session 13 Summary
-
-Write button split and overlay z-index fix:
-
-1. **Fixed overlay z-index glitch**: When scrolling the grid while disabled (during read), the sticky header created a stacking context conflict with the overlay. Fixed by increasing overlay z-index from 10 to 15 (higher than sticky header's 10), and panel-disabled-message to 16.
-
-2. **Write button dropdown**: Split Write button into main button + dropdown arrow:
-   - Click main button = Write All (same as before)
-   - Click dropdown arrow = menu with 3 options: Write All, Settings Only, Channels Only
-   - Each mode writes only the relevant memory ranges for faster selective updates
-
-3. **Split WRITE_RANGES in ble.js**: Defined three sets of write ranges:
-   - `WRITE_RANGES_ALL`: Full write (channels + settings + extended)
-   - `WRITE_RANGES_SETTINGS`: Settings only (function keys, config, messages, extended)
-   - `WRITE_RANGES_CHANNELS`: Channels only (channel data, names, scan bitmap)
-
-4. **Created docs/thoughts.md**: Documents trade-offs for future read optimization. Conclusion: keep full 16KB reads for simplicity (no file format complexity, no data loss risks).
-
----
-
-## Session 14 Summary
-
-Tooltip system overhaul - all tooltips now instant and informative:
-
-1. **Settings tooltips instant**: Custom JS tooltip system replaces native `title` attribute (which has ~500ms delay). Tooltips appear immediately on hover, bounded to viewport.
-
-2. **Debug bitfield tooltips**: Packed flag bytes (0xCA0-0xCAB, 0x300A, etc.) now show multiline breakdown:
-   ```
-   0x0CA1: Flags
-   Value: 0x15 (21) (binary: 00010101)
-   bit0: Voice[11] = 1
-   bit2: Beep[7] = 1
-   bit4: KeyLock[9] = 1
-   ```
-   Each bit's current value is extracted and displayed.
-
-3. **Channel header tooltips fixed**: Changed from `title` to `data-tip` attribute to prevent native browser tooltip appearing after delay (was causing double tooltip overlap).
-
-4. **CSS tooltip improvements**: Unified `.hex-tooltip` and `.settings-tooltip` styles, added `.tip-line` and `.tip-bitfield` classes for structured display.
-
+From user testing:
+- **FM Interrupt [26]**: OFF = allow incoming calls to interrupt FM radio mode
+- **DCD [35]**: Enable DTMF signaling for single call, group call, etc.
+- **D-HOLD [36]**: DTMF auto-reset time
+- **D-RSP [37]**: NULL=silent, RING=ring tone, REPLY=ring + 1s call-back, BOTH=ring + call-back
