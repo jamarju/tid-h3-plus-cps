@@ -9,7 +9,7 @@
 
 Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, no frameworks.
 
-**App Files** (in `app/`):
+**App Files** (at root):
 - `index.html` - Main UI with tabs (Channels, Settings, Debug)
 - `js/ble.js` - BLE protocol, `parseSettings()` and `encodeSettings()`
 - `js/debug.js` - Hex dump viewer with memory map (436 entries)
@@ -21,7 +21,7 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 - `ble-protocol.md` - BLE connection and commands
 - `thoughts.md` - Future considerations (read optimization trade-offs)
 
-**Server:** `cd app && python -m http.server 8000` then open http://localhost:8000
+**Server:** `python -m http.server 8000` then open http://localhost:8000
 
 **Keyboard shortcuts:** Ctrl+1/2/3 to switch tabs, Ctrl+S save, Ctrl+O load
 

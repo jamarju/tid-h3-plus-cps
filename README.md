@@ -2,7 +2,7 @@
 
 Web-based programming software for the Tidradio H3 Plus radio. No apps, no cables - just your browser and Bluetooth.
 
-**[Launch App](https://jamarju.github.io/tid-h3-plus-cps/app/)**
+**[Launch App](https://jamarju.github.io/tid-h3-plus-cps/)**
 
 ## Quick Start
 
@@ -31,7 +31,7 @@ Configurations are saved as `.h3p` files - raw 16KB binary dumps of radio memory
 ## Development
 
 ```bash
-cd app && python -m http.server 8000
+python -m http.server 8000
 # Open http://localhost:8000
 ```
 
