@@ -73,6 +73,15 @@ body {
     color: var(--text-primary);
 }
 
+.firmware-note {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    cursor: help;
+}
+
 .connection-status {
     font-size: 12px;
     padding: 3px 10px;
@@ -450,6 +459,29 @@ body {
     font-size: 12px;
     color: var(--text-secondary);
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.setting-row label[title] {
+    cursor: help;
+}
+
+.setting-index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 18px;
+    padding: 0 4px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
 }
 
 .setting-row select,

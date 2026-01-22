@@ -708,7 +708,6 @@ const BLE = {
             priorityTx: 0,
             dispLcdTx: true,
             dispLcdRx: true,
-            rTone: 2,
             bl: true,
             sync: false,
             rpSte: 0,

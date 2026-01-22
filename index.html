@@ -10,6 +10,7 @@
     <header class="header">
         <div class="header-left">
             <h1>Tidradio H3 Plus CPS</h1>
+            <span class="firmware-note" title="This software has been tested with H3 Plus firmware v1.0.45">Tested: FW v1.0.45</span>
             <span class="connection-status" id="connectionStatus">Disconnected</span>
         </div>
         <div class="header-actions">
@@ -65,7 +66,7 @@
                 <div class="settings-group">
                     <h3>Display</h3>
                     <div class="setting-row">
-                        <label for="display">Display [15]</label>
+                        <label for="display" title="Screen layout: Single shows one channel, Dual shows A+B channels side by side, Classic is legacy style"><span class="setting-index">15</span> Display</label>
                         <select id="display">
                             <option value="0">Single</option>
                             <option value="1">Dual</option>
@@ -73,7 +74,7 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="lightControl">Backlight [12]</label>
+                        <label for="lightControl" title="How long the backlight stays on after pressing a key. Always On uses more battery."><span class="setting-index">12</span> Backlight</label>
                         <select id="lightControl">
                             <option value="0">Always On</option>
                             <option value="1">5S</option>
@@ -83,7 +84,7 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="brightness">Brightness [13]</label>
+                        <label for="brightness" title="Display brightness level. Higher values use more battery."><span class="setting-index">13</span> Brightness</label>
                         <select id="brightness">
                             <option value="1">1</option>
                             <option value="2">2</option>
@@ -93,21 +94,21 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="aChannelDisp">Display Type-A [17]</label>
+                        <label for="aChannelDisp" title="What to show for VFO-A: frequency with channel number, or channel name with number"><span class="setting-index">17</span> Display Type-A</label>
                         <select id="aChannelDisp">
                             <option value="0">Freq + Number</option>
                             <option value="1">Name + Number</option>
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="bChannelDisp">Display Type-B [18]</label>
+                        <label for="bChannelDisp" title="What to show for VFO-B: frequency with channel number, or channel name with number"><span class="setting-index">18</span> Display Type-B</label>
                         <select id="bChannelDisp">
                             <option value="0">Freq + Number</option>
                             <option value="1">Name + Number</option>
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="menuColor">Menu Color [42]</label>
+                        <label for="menuColor" title="Color theme for the menu interface and highlights"><span class="setting-index">42</span> Menu Color</label>
                         <select id="menuColor">
                             <option value="0">Blue</option>
                             <option value="1">Red</option>
@@ -134,7 +135,7 @@
                 <div class="settings-group">
                     <h3>Audio</h3>
                     <div class="setting-row">
-                        <label for="squelchLevel">Squelch Level [1]</label>
+                        <label for="squelchLevel" title="Minimum signal strength to open the speaker. Higher levels require stronger signals - use higher values in noisy environments."><span class="setting-index">01</span> Squelch Level</label>
                         <select id="squelchLevel">
                             <option value="0">OFF</option>
                             <option value="1">Level 1</option>
@@ -149,11 +150,11 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="voicePrompt">Voice [11]</label>
+                        <label for="voicePrompt" title="Enable spoken voice prompts for menu navigation and channel announcements"><span class="setting-index">11</span> Voice</label>
                         <input type="checkbox" id="voicePrompt">
                     </div>
                     <div class="setting-row">
-                        <label for="language">Language [21]</label>
+                        <label for="language" title="Language for voice prompts and menu text"><span class="setting-index">21</span> Language</label>
                         <select id="language">
                             <option value="0">English</option>
                             <option value="1">Chinese</option>
@@ -166,11 +167,11 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="beep">Keypad Beep [7]</label>
+                        <label for="beep" title="Play a beep sound when pressing keypad buttons"><span class="setting-index">07</span> Keypad Beep</label>
                         <input type="checkbox" id="beep">
                     </div>
                     <div class="setting-row">
-                        <label for="roger">Roger Beep [6]</label>
+                        <label for="roger" title="Beep tone transmitted at end of your transmission to signal you're done talking"><span class="setting-index">06</span> Roger Beep</label>
                         <select id="roger">
                             <option value="0">OFF</option>
                             <option value="1">TONE1</option>
@@ -178,7 +179,7 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="micGain">[33] MIC Gain</label>
+                        <label for="micGain" title="Microphone sensitivity. Increase if others say you're too quiet, decrease if you're distorted."><span class="setting-index">33</span> MIC Gain</label>
                         <select id="micGain">
                             <option value="0">00</option>
                             <option value="1">01</option>
@@ -192,25 +193,16 @@
                             <option value="9">09</option>
                         </select>
                     </div>
-                    <div class="setting-row">
-                        <label for="rTone">R-TONE</label>
-                        <select id="rTone">
-                            <option value="0">1000Hz</option>
-                            <option value="1">1450Hz</option>
-                            <option value="2">1750Hz</option>
-                            <option value="3">2100Hz</option>
-                        </select>
-                    </div>
                 </div>
 
                 <div class="settings-group">
                     <h3>Signal</h3>
                     <div class="setting-row">
-                        <label for="ste">STE [23]</label>
+                        <label for="ste" title="Squelch Tail Elimination - reduces the 'kerchunk' noise burst at the end of received transmissions"><span class="setting-index">23</span> STE</label>
                         <input type="checkbox" id="ste">
                     </div>
                     <div class="setting-row">
-                        <label for="toneBurst">Tone Burst [24]</label>
+                        <label for="toneBurst" title="Brief tone sent at start of transmission to open repeater squelch (for older repeaters)"><span class="setting-index">24</span> Tone Burst</label>
                         <select id="toneBurst">
                             <option value="0">1000Hz</option>
                             <option value="1">1450Hz</option>
@@ -219,11 +211,11 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="talkAround">Talk Around [25]</label>
+                        <label for="talkAround" title="Bypass repeater TX/RX offset to communicate directly on the RX frequency (simplex)"><span class="setting-index">25</span> Talk Around</label>
                         <input type="checkbox" id="talkAround">
                     </div>
                     <div class="setting-row">
-                        <label for="fmInterrupt">FM Interrupt [26]</label>
+                        <label for="fmInterrupt" title="When OFF, incoming calls can interrupt FM radio mode. When ON, FM radio plays uninterrupted."><span class="setting-index">26</span> FM Interrupt</label>
                         <input type="checkbox" id="fmInterrupt">
                     </div>
                 </div>
@@ -231,7 +223,7 @@
                 <div class="settings-group">
                     <h3>TX Settings</h3>
                     <div class="setting-row">
-                        <label for="stepFreq">Step Freq [2]</label>
+                        <label for="stepFreq" title="Frequency step size when tuning with the dial in VFO mode. 12.5K is standard for most radios."><span class="setting-index">02</span> Step Freq</label>
                         <select id="stepFreq">
                             <option value="0">2.5K</option>
                             <option value="1">5.0K</option>
@@ -245,7 +237,7 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="tot">TOT [5]</label>
+                        <label for="tot" title="Transmit Over Time - automatically stops transmission after this time limit to prevent accidental long transmissions"><span class="setting-index">05</span> TOT</label>
                         <select id="tot">
                             <option value="0">OFF</option>
                             <option value="1">30S</option>
@@ -258,7 +250,7 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="pttDelay">PTT Delay [20]</label>
+                        <label for="pttDelay" title="Delay before audio is transmitted after pressing PTT. Allows repeater time to open before you speak."><span class="setting-index">20</span> PTT Delay</label>
                         <select id="pttDelay">
                             <option value="0">100ms</option>
                             <option value="1">200ms</option>
@@ -273,22 +265,22 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="modulation">Modulation [38]</label>
+                        <label for="modulation" title="Modulation type: FM for most amateur/PMR use, AM for airband receive"><span class="setting-index">38</span> Modulation</label>
                         <select id="modulation">
                             <option value="0">FM</option>
                             <option value="1">AM</option>
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="tx200">200Tx [39]</label>
+                        <label for="tx200" title="Enable transmit in 200MHz band (220-225MHz amateur band). Check your license!"><span class="setting-index">39</span> 200Tx</label>
                         <input type="checkbox" id="tx200">
                     </div>
                     <div class="setting-row">
-                        <label for="tx350">350Tx [40]</label>
+                        <label for="tx350" title="Enable transmit in 350MHz band. Check local regulations!"><span class="setting-index">40</span> 350Tx</label>
                         <input type="checkbox" id="tx350">
                     </div>
                     <div class="setting-row">
-                        <label for="tx500">500Tx [41]</label>
+                        <label for="tx500" title="Enable transmit in 500MHz band. Check local regulations!"><span class="setting-index">41</span> 500Tx</label>
                         <input type="checkbox" id="tx500">
                     </div>
                 </div>
@@ -296,7 +288,7 @@
                 <div class="settings-group">
                     <h3>VOX</h3>
                     <div class="setting-row">
-                        <label for="voxGain">VOX Level [3]</label>
+                        <label for="voxGain" title="Voice-activated transmit sensitivity. Higher levels trigger on quieter sounds. Useful for hands-free operation."><span class="setting-index">03</span> VOX Level</label>
                         <select id="voxGain">
                             <option value="0">OFF</option>
                             <option value="1">Level 1</option>
@@ -307,7 +299,7 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="voxDelay">VOX Delay [4]</label>
+                        <label for="voxDelay" title="How long the radio keeps transmitting after you stop talking (VOX hang time)"><span class="setting-index">04</span> VOX Delay</label>
                         <select id="voxDelay">
                             <option value="0">1.0S</option>
                             <option value="1">2.0S</option>
@@ -319,7 +311,7 @@
                 <div class="settings-group">
                     <h3>Scan</h3>
                     <div class="setting-row">
-                        <label for="tdr">Dual Watch [10]</label>
+                        <label for="tdr" title="Monitor both VFO-A and VFO-B channels, alternating between them to catch activity on either"><span class="setting-index">10</span> Dual Watch</label>
                         <input type="checkbox" id="tdr">
                     </div>
                 </div>
@@ -327,7 +319,7 @@
                 <div class="settings-group">
                     <h3>Power Save</h3>
                     <div class="setting-row">
-                        <label for="save">Power Save [8]</label>
+                        <label for="save" title="Battery saver duty cycle. Radio sleeps between receive checks. Higher ratios save more battery but may miss quick transmissions."><span class="setting-index">08</span> Power Save</label>
                         <select id="save">
                             <option value="0">OFF</option>
                             <option value="1">Level 1 (1:1)</option>
@@ -337,7 +329,7 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="autoLock">Keypad Lock [9]</label>
+                        <label for="autoLock" title="Automatically lock the keypad to prevent accidental button presses"><span class="setting-index">09</span> Keypad Lock</label>
                         <input type="checkbox" id="autoLock">
                     </div>
                 </div>
@@ -345,19 +337,19 @@
                 <div class="settings-group">
                     <h3>Function Keys</h3>
                     <div class="setting-row">
-                        <label for="shortKeyPf1">[27] PF1 Short Press</label>
+                        <label for="shortKeyPf1" title="Function assigned to short press of PF1 side button"><span class="setting-index">27</span> PF1 Short</label>
                         <select id="shortKeyPf1" class="key-select"></select>
                     </div>
                     <div class="setting-row">
-                        <label for="longKeyPf1">[28] PF1 Long Press</label>
+                        <label for="longKeyPf1" title="Function assigned to long press of PF1 side button"><span class="setting-index">28</span> PF1 Long</label>
                         <select id="longKeyPf1" class="key-select"></select>
                     </div>
                     <div class="setting-row">
-                        <label for="shortKeyPf2">[29] PF2 Short Press</label>
+                        <label for="shortKeyPf2" title="Function assigned to short press of PF2 side button"><span class="setting-index">29</span> PF2 Short</label>
                         <select id="shortKeyPf2" class="key-select"></select>
                     </div>
                     <div class="setting-row">
-                        <label for="longKeyPf2">[30] PF2 Long Press</label>
+                        <label for="longKeyPf2" title="Function assigned to long press of PF2 side button"><span class="setting-index">30</span> PF2 Long</label>
                         <select id="longKeyPf2" class="key-select"></select>
                     </div>
                 </div>
@@ -365,7 +357,7 @@
                 <div class="settings-group">
                     <h3>Alarm</h3>
                     <div class="setting-row">
-                        <label for="alarmMode">Alarm Mode [22]</label>
+                        <label for="alarmMode" title="On Site: local alarm only. TX Alarm: transmits alarm signal to alert others."><span class="setting-index">22</span> Alarm Mode</label>
                         <select id="alarmMode">
                             <option value="0">On Site</option>
                             <option value="2">TX Alarm</option>
@@ -376,15 +368,15 @@
                 <div class="settings-group">
                     <h3>DTMF</h3>
                     <div class="setting-row">
-                        <label for="aniEdit">ANI-Edit [16]</label>
+                        <label for="aniEdit" title="Automatic Number Identification - your radio's 3-digit ID code sent with PTT ID"><span class="setting-index">16</span> ANI-Edit</label>
                         <input type="text" id="aniEdit" maxlength="3" class="text-input" pattern="[0-9]{3}" placeholder="000">
                     </div>
                     <div class="setting-row">
-                        <label for="dtmfSideTone">DTMF Side Tone [19]</label>
+                        <label for="dtmfSideTone" title="Hear DTMF tones in the speaker when sending them"><span class="setting-index">19</span> DTMF Side Tone</label>
                         <input type="checkbox" id="dtmfSideTone">
                     </div>
                     <div class="setting-row">
-                        <label for="dtmfSpeed">DTMF Speed [34]</label>
+                        <label for="dtmfSpeed" title="Duration of each DTMF digit when sending. Slower speeds are more reliable but take longer."><span class="setting-index">34</span> DTMF Speed</label>
                         <select id="dtmfSpeed">
                             <option value="0">80ms</option>
                             <option value="1">90ms</option>
@@ -397,11 +389,11 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="dDcd">DCD [35]</label>
+                        <label for="dDcd" title="Enable DTMF signaling for single call, group call, and other DTMF calling features"><span class="setting-index">35</span> DCD</label>
                         <input type="checkbox" id="dDcd">
                     </div>
                     <div class="setting-row">
-                        <label for="dHold">D-HOLD [36]</label>
+                        <label for="dHold" title="DTMF auto-reset time - how long before the DTMF decoder resets after receiving tones"><span class="setting-index">36</span> D-HOLD</label>
                         <select id="dHold">
                             <option value="0">OFF</option>
                             <option value="1">5S</option>
@@ -410,7 +402,7 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="dRsp">D-RSP [37]</label>
+                        <label for="dRsp" title="DTMF call response: NULL=silent, RING=play ring tone, REPLY=ring + 1s call-back, BOTH=ring + call-back"><span class="setting-index">37</span> D-RSP</label>
                         <select id="dRsp">
                             <option value="0">NULL</option>
                             <option value="1">RING</option>
@@ -423,7 +415,7 @@
                 <div class="settings-group">
                     <h3>LED</h3>
                     <div class="setting-row">
-                        <label for="breathLed">Breath LED [32]</label>
+                        <label for="breathLed" title="LED breathing effect duration when radio is idle. Creates a pulsing glow. Uses extra battery."><span class="setting-index">32</span> Breath LED</label>
                         <select id="breathLed">
                             <option value="0">OFF</option>
                             <option value="1">5s</option>
@@ -437,7 +429,7 @@
                 <div class="settings-group">
                     <h3>Power On Message</h3>
                     <div class="setting-row">
-                        <label for="ponmgs">PONMGS</label>
+                        <label for="ponmgs" title="What to show on boot: OFF=nothing, MSG=custom messages, Voltage=battery voltage"><span class="setting-index">14</span> PONMGS</label>
                         <select id="ponmgs">
                             <option value="0">OFF</option>
                             <option value="1">MSG</option>
@@ -445,15 +437,15 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="msg1">MSG1</label>
+                        <label for="msg1" title="First line of custom power-on message (up to 16 characters)">MSG1</label>
                         <input type="text" id="msg1" maxlength="16" class="text-input">
                     </div>
                     <div class="setting-row">
-                        <label for="msg2">MSG2</label>
+                        <label for="msg2" title="Second line of custom power-on message (up to 16 characters)">MSG2</label>
                         <input type="text" id="msg2" maxlength="16" class="text-input">
                     </div>
                     <div class="setting-row">
-                        <label for="msg3">MSG3</label>
+                        <label for="msg3" title="Third line of custom power-on message (up to 16 characters)">MSG3</label>
                         <input type="text" id="msg3" maxlength="16" class="text-input">
                     </div>
                 </div>

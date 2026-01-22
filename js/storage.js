@@ -210,7 +210,6 @@ const Storage = {
             voxDelay: 1,
             alarmMode: 0,
             tdr: false,
-            rTone: 2,
             bl: false,
             sync: false,
             aChannelDisp: 0,

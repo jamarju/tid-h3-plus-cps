@@ -3,7 +3,8 @@
     "allow": [
       "WebFetch(domain:github.com)",
       "WebSearch",
-      "Bash(python -m http.server:*)"
+      "Bash(python -m http.server:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

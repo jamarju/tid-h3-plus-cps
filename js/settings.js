@@ -90,7 +90,6 @@ const Settings = {
         this.setSelectValue('language', this.settings.language);
         this.setSelectValue('roger', this.settings.roger);
         this.setSelectValue('micGain', this.settings.micGain);
-        this.setSelectValue('rTone', this.settings.rTone);
 
         // Selects - Signal
         this.setSelectValue('toneBurst', this.settings.toneBurst);
