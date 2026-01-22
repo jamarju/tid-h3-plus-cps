@@ -1,28 +1,24 @@
 /**
  * storage.js - File save/load operations for Tidradio H3 Plus CPS
+ *
+ * File format: Raw 16KB binary dump of radio memory (.h3p)
  */
 
 const Storage = {
-    FILE_VERSION: '1.0',
     FILE_EXTENSION: '.h3p',
+    MEMORY_SIZE: 16384,
 
     /**
-     * Save data to a JSON file
-     * @param {Object} data - Data to save (channels and settings)
+     * Save raw memory to binary file
+     * @param {Uint8Array} rawData - 16KB raw memory dump
      * @param {string} filename - Suggested filename
      */
-    async save(data, filename = 'tidradio_h3plus') {
-        const exportData = {
-            version: this.FILE_VERSION,
-            device: 'TD-H3-Plus',
-            timestamp: new Date().toISOString(),
-            channels: data.channels,
-            settings: data.settings,
-            rawData: data.rawData || null
-        };
+    async save(rawData, filename = 'tidradio_h3plus') {
+        if (!rawData || rawData.length !== this.MEMORY_SIZE) {
+            throw new Error('Invalid data: expected 16KB memory dump');
+        }
 
-        const json = JSON.stringify(exportData, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
+        const blob = new Blob([rawData], { type: 'application/octet-stream' });
 
         // Try File System Access API first (modern browsers)
         if ('showSaveFilePicker' in window) {
@@ -30,8 +26,8 @@ const Storage = {
                 const handle = await window.showSaveFilePicker({
                     suggestedName: filename + this.FILE_EXTENSION,
                     types: [{
-                        description: 'H3 Plus Config',
-                        accept: { 'application/json': [this.FILE_EXTENSION, '.json'] }
+                        description: 'H3 Plus Memory Dump',
+                        accept: { 'application/octet-stream': [this.FILE_EXTENSION] }
                     }]
                 });
                 const writable = await handle.createWritable();
@@ -59,8 +55,8 @@ const Storage = {
     },
 
     /**
-     * Load data from a JSON file
-     * @returns {Promise<Object>} Loaded data
+     * Load raw memory from binary file
+     * @returns {Promise<Object>} Loaded data with rawData Uint8Array
      */
     async load() {
         // Try File System Access API first
@@ -68,8 +64,8 @@ const Storage = {
             try {
                 const [handle] = await window.showOpenFilePicker({
                     types: [{
-                        description: 'H3 Plus Config',
-                        accept: { 'application/json': [this.FILE_EXTENSION, '.json'] }
+                        description: 'H3 Plus Memory Dump',
+                        accept: { 'application/octet-stream': [this.FILE_EXTENSION] }
                     }]
                 });
                 const file = await handle.getFile();
@@ -108,143 +104,23 @@ const Storage = {
     },
 
     /**
-     * Parse a loaded file
+     * Parse a loaded binary file
      * @param {File} file - File to parse
-     * @returns {Promise<Object>} Parsed data
+     * @returns {Promise<Object>} Parsed data with rawData
      */
     async parseFile(file) {
-        const text = await file.text();
-        let data;
+        const buffer = await file.arrayBuffer();
+        const rawData = new Uint8Array(buffer);
 
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            throw new Error('Invalid JSON file');
-        }
-
-        // Validate file structure
-        if (!this.validateData(data)) {
-            throw new Error('Invalid file format');
+        // Validate file size
+        if (rawData.length !== this.MEMORY_SIZE) {
+            throw new Error(`Invalid file size: expected ${this.MEMORY_SIZE} bytes, got ${rawData.length}`);
         }
 
         return {
             success: true,
             filename: file.name,
-            data: {
-                channels: data.channels,
-                settings: data.settings,
-                rawData: data.rawData || null
-            }
-        };
-    },
-
-    /**
-     * Validate loaded data structure
-     * @param {Object} data - Data to validate
-     * @returns {boolean} True if valid
-     */
-    validateData(data) {
-        if (!data || typeof data !== 'object') return false;
-        if (!data.channels || !Array.isArray(data.channels)) return false;
-        if (!data.settings || typeof data.settings !== 'object') return false;
-
-        // Validate channel count
-        if (data.channels.length > 199) return false;
-
-        // Validate each channel has required fields
-        for (const ch of data.channels) {
-            if (typeof ch.channel !== 'number') return false;
-            if (ch.channel < 1 || ch.channel > 199) return false;
-        }
-
-        return true;
-    },
-
-    /**
-     * Create default channel data
-     * @param {number} channelNum - Channel number (1-199)
-     * @returns {Object} Default channel object
-     */
-    createDefaultChannel(channelNum) {
-        return {
-            channel: channelNum,
-            rxFreq: 0,
-            txFreq: 0,
-            frequencyHop: false,
-            decode: 'OFF',
-            encode: 'OFF',
-            txPower: 'HIGH',
-            bandwidth: 'W',
-            busyLock: false,
-            pttId: 'OFF',        // OFF, BOT, EOT, BOTH
-            scanAdd: true,
-            name: '',
-            scramble: 0          // 0=off, 1-16=level
-        };
-    },
-
-    /**
-     * Create default settings
-     * @returns {Object} Default settings object
-     */
-    createDefaultSettings() {
-        return {
-            lightControl: 2,
-            squelchLevel: 5,
-            voicePrompt: true,
-            language: 0,
-            tot: 3,
-            save: 0,
-            scanRev: 0,
-            priorityTx: 0,
-            dispLcdTx: true,
-            dispLcdRx: true,
-            autoLock: false,
-            roger: 0,
-            beep: true,
-            shortKeyPf1: 0,
-            longKeyPf1: 0,
-            shortKeyPf2: 0,
-            longKeyPf2: 0,
-            voxGain: 0,
-            voxDelay: 1,
-            alarmMode: 0,
-            tdr: false,
-            bl: false,
-            sync: false,
-            aChannelDisp: 0,
-            bChannelDisp: 0,
-            rpSte: 0,
-            micGain: 5,
-            breathLed: 0,
-            dtmfSideTone: false,
-            stun: false,
-            kill: false,
-            ponmgs: 0,
-            msg1: '',
-            msg2: '',
-            msg3: '',
-            dDcd: false,
-            dHold: 0,
-            dtmfSpeed: 2,
-            brightness: 5,
-            dRsp: 0,
-            amBand: false
-        };
-    },
-
-    /**
-     * Create initial app data with defaults
-     * @returns {Object} Initial data object
-     */
-    createInitialData() {
-        const channels = [];
-        for (let i = 1; i <= 199; i++) {
-            channels.push(this.createDefaultChannel(i));
-        }
-        return {
-            channels,
-            settings: this.createDefaultSettings()
+            rawData: rawData
         };
     }
 };

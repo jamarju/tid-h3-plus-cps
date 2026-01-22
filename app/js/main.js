@@ -232,7 +232,7 @@ const App = {
     },
 
     /**
-     * Handle load file
+     * Handle load file (binary 16KB dump)
      */
     async handleLoad() {
         try {
@@ -244,13 +244,14 @@ const App = {
                 return;
             }
 
-            Grid.update(result.data.channels);
-            Settings.update(result.data.settings);
-            this.rawData = result.data.rawData ? new Uint8Array(result.data.rawData) : null;
+            // Parse raw binary data
+            this.rawData = result.rawData;
+            const channels = BLE.parseChannels(this.rawData);
+            const settings = BLE.parseSettings(this.rawData);
 
-            if (this.rawData) {
-                Debug.render(this.rawData);
-            }
+            Grid.update(channels);
+            Settings.update(settings);
+            Debug.render(this.rawData);
 
             this.updateGridState();
             this.setStatus('Loaded: ' + result.filename);
@@ -260,10 +261,15 @@ const App = {
     },
 
     /**
-     * Handle save file
+     * Handle save file (binary 16KB dump)
      */
     async handleSave() {
         try {
+            if (!this.rawData) {
+                this.setStatus('No data to save. Read from radio first.');
+                return;
+            }
+
             // Validate settings
             const validation = Settings.validate();
             if (!validation.valid) {
@@ -273,13 +279,11 @@ const App = {
 
             this.setStatus('Saving...');
 
-            const data = {
-                channels: Grid.getData(),
-                settings: Settings.getData(),
-                rawData: this.rawData ? Array.from(this.rawData) : null
-            };
+            // Encode current UI state into rawData
+            BLE.encodeChannels(this.rawData, Grid.getData());
+            BLE.encodeSettings(this.rawData, Settings.getData());
 
-            const result = await Storage.save(data);
+            const result = await Storage.save(this.rawData);
 
             if (result.cancelled) {
                 this.setStatus('Ready');
