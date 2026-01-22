@@ -651,19 +651,19 @@ body {
     cursor: help;
 }
 
-.channel-grid th[title] {
+.channel-grid th[data-tip] {
     cursor: help;
     text-decoration: underline dotted var(--text-muted);
     text-underline-offset: 2px;
 }
 
-.channel-grid th[title]:hover {
+.channel-grid th[data-tip]:hover {
     color: var(--accent-primary);
 }
 
 /* Custom tooltip styling via CSS */
-.channel-grid th[title]:hover::after {
-    content: attr(title);
+.channel-grid th[data-tip]:hover::after {
+    content: attr(data-tip);
     position: absolute;
     top: 100%;
     left: 50%;
@@ -675,9 +675,8 @@ body {
     border-radius: 4px;
     font-size: 11px;
     font-weight: normal;
-    white-space: nowrap;
-    max-width: 300px;
     white-space: normal;
+    max-width: 300px;
     z-index: 100;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     pointer-events: none;
@@ -814,20 +813,43 @@ body {
     white-space: pre;
 }
 
-/* Instant hex tooltip */
-.hex-tooltip {
+/* Instant tooltips (hex dump and settings) */
+.hex-tooltip,
+.settings-tooltip {
     display: none;
     position: fixed;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-light);
     color: var(--text-primary);
-    padding: 6px 10px;
+    padding: 8px 12px;
     border-radius: 4px;
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: 11px;
     z-index: 1000;
     pointer-events: none;
     box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    max-width: 400px;
-    white-space: nowrap;
+    max-width: 320px;
+    white-space: normal;
+    line-height: 1.4;
+}
+
+.hex-tooltip {
+    font-family: var(--font-mono);
+}
+
+.hex-tooltip .tip-line {
+    display: block;
+    padding: 1px 0;
+}
+
+.hex-tooltip .tip-line:first-child {
+    color: var(--accent-primary);
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.hex-tooltip .tip-bitfield {
+    display: block;
+    padding-left: 8px;
+    color: var(--text-secondary);
 }

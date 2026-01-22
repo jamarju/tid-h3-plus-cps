@@ -47,19 +47,19 @@
                 <table class="channel-grid" id="channelGrid">
                     <thead>
                         <tr>
-                            <th class="col-ch" title="Channel number (1-199)">CH</th>
-                            <th class="col-rxfreq" title="Receive frequency in MHz - the frequency you listen on">RX Freq</th>
-                            <th class="col-txfreq" title="Transmit frequency in MHz - the frequency you transmit on (same as RX for simplex)">TX Freq</th>
-                            <th class="col-hop" title="Frequency Hopping - enables spread spectrum hopping (both radios must match)">Hop</th>
-                            <th class="col-decode" title="RX CTCSS/DCS tone - only opens squelch when this tone is received (privacy code)">Decode(RX)</th>
-                            <th class="col-encode" title="TX CTCSS/DCS tone - transmits this tone so others with matching Decode can hear you">Encode(TX)</th>
-                            <th class="col-power" title="Transmit power: LOW (~1W) for short range/battery saving, HIGH (~5W) for longer range">Power</th>
-                            <th class="col-bw" title="Bandwidth: N=Narrow (12.5kHz) for digital/PMR446, W=Wide (25kHz) for analog amateur">BW</th>
-                            <th class="col-busy" title="Busy Channel Lockout - prevents transmitting when channel is in use">Busy</th>
-                            <th class="col-pttid" title="PTT ID - sends DTMF identification when you press/release PTT">PTT ID</th>
-                            <th class="col-scan" title="Include this channel in scan list when scanning">Scan</th>
-                            <th class="col-name" title="Channel name (up to 8 characters) displayed on radio screen">Name</th>
-                            <th class="col-scramble" title="Voice scrambling - both radios must have same setting to communicate">Scram</th>
+                            <th class="col-ch" data-tip="Channel number (1-199)">CH</th>
+                            <th class="col-rxfreq" data-tip="Receive frequency in MHz - the frequency you listen on">RX Freq</th>
+                            <th class="col-txfreq" data-tip="Transmit frequency in MHz - the frequency you transmit on (same as RX for simplex)">TX Freq</th>
+                            <th class="col-hop" data-tip="Frequency Hopping - enables spread spectrum hopping (both radios must match)">Hop</th>
+                            <th class="col-decode" data-tip="RX CTCSS/DCS tone - only opens squelch when this tone is received (privacy code)">Decode(RX)</th>
+                            <th class="col-encode" data-tip="TX CTCSS/DCS tone - transmits this tone so others with matching Decode can hear you">Encode(TX)</th>
+                            <th class="col-power" data-tip="Transmit power: LOW (~1W) for short range/battery saving, HIGH (~5W) for longer range">Power</th>
+                            <th class="col-bw" data-tip="Bandwidth: N=Narrow (12.5kHz) for digital/PMR446, W=Wide (25kHz) for analog amateur">BW</th>
+                            <th class="col-busy" data-tip="Busy Channel Lockout - prevents transmitting when channel is in use">Busy</th>
+                            <th class="col-pttid" data-tip="PTT ID - sends DTMF identification when you press/release PTT">PTT ID</th>
+                            <th class="col-scan" data-tip="Include this channel in scan list when scanning">Scan</th>
+                            <th class="col-name" data-tip="Channel name (up to 8 characters) displayed on radio screen">Name</th>
+                            <th class="col-scramble" data-tip="Voice scrambling - both radios must have same setting to communicate">Scram</th>
                         </tr>
                     </thead>
                     <tbody id="channelBody">

@@ -209,6 +209,62 @@ const Settings = {
                 this.settings[id] = el.value;
             }
         });
+
+        this.initTooltips(container);
+    },
+
+    /**
+     * Initialize instant tooltips for settings labels
+     */
+    initTooltips(container) {
+        // Create tooltip element if it doesn't exist
+        let tooltip = document.getElementById('settingsTooltip');
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.id = 'settingsTooltip';
+            tooltip.className = 'settings-tooltip';
+            document.body.appendChild(tooltip);
+        }
+
+        // Get all labels with titles
+        const labels = container.querySelectorAll('label[title]');
+
+        labels.forEach(label => {
+            const title = label.getAttribute('title');
+            // Remove native title to prevent double tooltips
+            label.removeAttribute('title');
+            label.setAttribute('data-tip', title);
+
+            label.addEventListener('mouseenter', (e) => {
+                tooltip.textContent = label.getAttribute('data-tip');
+                tooltip.style.display = 'block';
+                this.positionTooltip(e, tooltip);
+            });
+
+            label.addEventListener('mousemove', (e) => {
+                this.positionTooltip(e, tooltip);
+            });
+
+            label.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+            });
+        });
+    },
+
+    /**
+     * Position tooltip near cursor
+     */
+    positionTooltip(e, tooltip) {
+        const x = e.clientX + 12;
+        const y = e.clientY + 12;
+
+        // Keep tooltip within viewport
+        const rect = tooltip.getBoundingClientRect();
+        const maxX = window.innerWidth - rect.width - 20;
+        const maxY = window.innerHeight - rect.height - 20;
+
+        tooltip.style.left = Math.min(x, maxX) + 'px';
+        tooltip.style.top = Math.min(y, maxY) + 'px';
     },
 
     /**

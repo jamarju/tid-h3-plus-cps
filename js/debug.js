@@ -147,15 +147,66 @@ const Debug = {
     },
 
     /**
-     * Get description for an address
+     * Get description for an address (returns HTML)
      */
     getDescription(addr, value) {
         this.buildLookupTable();
+        const addrStr = `0x${addr.toString(16).toUpperCase().padStart(4, '0')}`;
+        const valStr = `0x${value.toString(16).toUpperCase().padStart(2, '0')} (${value})`;
         const desc = this.lookupTable.get(addr);
+
         if (desc) {
-            return `0x${addr.toString(16).toUpperCase().padStart(4, '0')}: ${desc}\nValue: 0x${value.toString(16).toUpperCase().padStart(2, '0')} (${value})`;
+            // Check if this is a packed flags byte (contains bit descriptions)
+            if (desc.includes('bit')) {
+                return this.formatBitfieldTooltip(addrStr, desc, valStr, value);
+            }
+            return `<span class="tip-line">${addrStr}: ${this.escapeHtml(desc)}</span><span class="tip-line">Value: ${valStr}</span>`;
         }
-        return `0x${addr.toString(16).toUpperCase().padStart(4, '0')}: Unknown\nValue: 0x${value.toString(16).toUpperCase().padStart(2, '0')} (${value})`;
+        return `<span class="tip-line">${addrStr}: Unknown</span><span class="tip-line">Value: ${valStr}</span>`;
+    },
+
+    /**
+     * Format a bitfield description into multiple lines
+     */
+    formatBitfieldTooltip(addrStr, desc, valStr, value) {
+        // Parse "Flags: bit0=X, bit2=Y, bit4-5=Z" format
+        const match = desc.match(/^([^:]+):\s*(.+)$/);
+        if (!match) {
+            return `<span class="tip-line">${addrStr}: ${this.escapeHtml(desc)}</span><span class="tip-line">Value: ${valStr}</span>`;
+        }
+
+        const label = match[1];
+        const bitParts = match[2].split(/,\s*/);
+
+        let html = `<span class="tip-line">${addrStr}: ${this.escapeHtml(label)}</span>`;
+        html += `<span class="tip-line">Value: ${valStr} (binary: ${value.toString(2).padStart(8, '0')})</span>`;
+
+        for (const part of bitParts) {
+            // Parse bit descriptions like "bit0=Voice[11]" or "bit4-5=ToneBurst[24]"
+            const bitMatch = part.match(/bit(\d+)(?:-(\d+))?=(.+)/);
+            if (bitMatch) {
+                const startBit = parseInt(bitMatch[1]);
+                const endBit = bitMatch[2] ? parseInt(bitMatch[2]) : startBit;
+                const name = bitMatch[3];
+
+                // Extract the value for this bit range
+                const mask = ((1 << (endBit - startBit + 1)) - 1) << startBit;
+                const bitValue = (value & mask) >> startBit;
+
+                html += `<span class="tip-bitfield">bit${startBit}${endBit !== startBit ? '-' + endBit : ''}: ${this.escapeHtml(name)} = ${bitValue}</span>`;
+            } else {
+                html += `<span class="tip-bitfield">${this.escapeHtml(part)}</span>`;
+            }
+        }
+
+        return html;
+    },
+
+    /**
+     * Escape HTML special characters
+     */
+    escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     },
 
     /**
@@ -194,7 +245,7 @@ const Debug = {
                 const value = data[addr];
                 const hex = value.toString(16).toUpperCase().padStart(2, '0');
                 const known = this.isKnown(addr);
-                const tip = this.getDescription(addr, value).replace(/"/g, '&quot;').replace(/\n/g, ' | ');
+                const tip = this.getDescription(addr, value);
 
                 // Color coding
                 let className = 'hex-byte';
@@ -206,7 +257,9 @@ const Debug = {
                     className += ' hex-unknown';
                 }
 
-                html += `<td class="${className}" data-tip="${tip}">${hex}</td>`;
+                // Encode HTML for data attribute (will be decoded when displayed)
+                const encodedTip = tip.replace(/"/g, '&quot;');
+                html += `<td class="${className}" data-tip="${encodedTip}">${hex}</td>`;
 
                 // ASCII representation
                 if (value >= 0x20 && value <= 0x7E) {
@@ -253,9 +306,9 @@ const Debug = {
         // Event delegation for hover
         container.addEventListener('mouseover', (e) => {
             if (e.target.classList.contains('hex-byte')) {
-                const title = e.target.getAttribute('data-tip');
-                if (title) {
-                    tooltip.textContent = title;
+                const tipHtml = e.target.getAttribute('data-tip');
+                if (tipHtml) {
+                    tooltip.innerHTML = tipHtml;
                     tooltip.style.display = 'block';
                     this.positionTooltip(e, tooltip);
                 }
@@ -276,12 +329,18 @@ const Debug = {
     },
 
     /**
-     * Position tooltip near cursor
+     * Position tooltip near cursor (bounded to viewport)
      */
     positionTooltip(e, tooltip) {
         const x = e.clientX + 12;
         const y = e.clientY + 12;
-        tooltip.style.left = x + 'px';
-        tooltip.style.top = y + 'px';
+
+        // Keep tooltip within viewport
+        const rect = tooltip.getBoundingClientRect();
+        const maxX = window.innerWidth - rect.width - 20;
+        const maxY = window.innerHeight - rect.height - 20;
+
+        tooltip.style.left = Math.min(x, maxX) + 'px';
+        tooltip.style.top = Math.min(y, maxY) + 'px';
     }
 };
