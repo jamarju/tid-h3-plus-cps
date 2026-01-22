@@ -29,6 +29,10 @@ const BLE = {
     expectedAddress: 0,
     progressCallback: null,
 
+    // Write state (for ACK handling)
+    writeAckResolve: null,
+    writeAckReject: null,
+
     /**
      * Connect to the radio via BLE
      * @returns {Promise<boolean>} Connection success
@@ -102,6 +106,15 @@ const BLE = {
     handleNotification(event) {
         const data = new Uint8Array(event.target.value.buffer);
 
+        // Handle ACK response (0x06) for write operations
+        if (data.length === 1 && data[0] === 0x06 && this.writeAckResolve) {
+            const resolve = this.writeAckResolve;
+            this.writeAckResolve = null;
+            this.writeAckReject = null;
+            resolve(true);
+            return;
+        }
+
         if (this.readBuffer && this.readResolve) {
             // Check if this is a read response (starts with 'W')
             if (data[0] === 0x57) { // 'W'
@@ -162,6 +175,26 @@ const BLE = {
     },
 
     /**
+     * Wait for ACK (0x06) from radio with timeout
+     * @param {number} timeout - Timeout in milliseconds
+     * @returns {Promise<boolean>} True if ACK received
+     */
+    waitForAck(timeout = 2000) {
+        return new Promise((resolve, reject) => {
+            this.writeAckResolve = resolve;
+            this.writeAckReject = reject;
+
+            setTimeout(() => {
+                if (this.writeAckResolve) {
+                    this.writeAckResolve = null;
+                    this.writeAckReject = null;
+                    reject(new Error('ACK timeout'));
+                }
+            }, timeout);
+        });
+    },
+
+    /**
      * Read all memory from the radio
      * @param {Function} onProgress - Progress callback (0-1)
      * @returns {Promise<Uint8Array>} Memory contents
@@ -216,6 +249,7 @@ const BLE = {
 
     /**
      * Write memory to the radio
+     * Based on ODMaster protocol analysis - requires checksum and ACK waiting
      * @param {Uint8Array} data - Memory contents to write
      * @param {Function} onProgress - Progress callback (0-1)
      */
@@ -224,43 +258,95 @@ const BLE = {
             throw new Error('Not connected');
         }
 
-        // Send handshake sequence
+        // Handshake sequence (from ODMaster capture)
+        // Step 1: AT+BAUD query
         await this.writeString('AT+BAUD?\r\n');
         await this.delay(100);
 
+        // Step 2: Send PVOJH handshake
         await this.write(new Uint8Array([0x50, 0x56, 0x4F, 0x4A, 0x48, 0x5C, 0x14]));
         await this.delay(100);
 
+        // Step 3: Wait for initial ACK (0x06), then send 0x02
+        // The radio sends 0x06 when ready
+        try {
+            await this.waitForAck(1000);
+        } catch (e) {
+            // Radio might already be ready, continue
+        }
         await this.write(new Uint8Array([0x02]));
         await this.delay(50);
 
+        // Step 4: Wait for model string response, then send ACK
+        // Radio responds with model info (e.g., "P31183")
+        await this.delay(100);
         await this.write(new Uint8Array([0x06]));
-        await this.delay(50);
 
-        // Write memory in chunks
-        const totalChunks = Math.ceil(data.length / this.CHUNK_SIZE);
+        // Step 5: Wait for ready ACK before starting writes
+        try {
+            await this.waitForAck(1000);
+        } catch (e) {
+            // Continue anyway
+        }
 
-        for (let addr = 0; addr < data.length; addr += this.CHUNK_SIZE) {
-            const addrHi = (addr >> 8) & 0xFF;
-            const addrLo = addr & 0xFF;
-            const len = Math.min(this.CHUNK_SIZE, data.length - addr);
-            const chunk = data.slice(addr, addr + len);
+        // Step 6: Write memory in chunks with checksum
+        // ODMaster writes specific ranges with gaps - must match exactly!
+        // Writing to unmapped areas may cause radio to reject
+        const WRITE_RANGES = [
+            [0x0000, 0x13C0],  // Channels, names, settings
+            [0x1800, 0x18E0],  // Config area 1 (ODMaster skips 0x18E0)
+            [0x1900, 0x1980],  // Scan bitmap at 0x1920+ (ODMaster skips 0x1980+)
+            [0x1C00, 0x1C40],  // Startup messages (ODMaster skips 0x1C40-0x1F1F)
+            [0x1F20, 0x1F40],  // Menu color at 0x1F2A, other settings
+        ];
 
-            // W + addrHi + addrLo + len + data
-            const packet = new Uint8Array(4 + len);
-            packet[0] = 0x57; // 'W'
-            packet[1] = addrHi;
-            packet[2] = addrLo;
-            packet[3] = len;
-            packet.set(chunk, 4);
+        let totalBytes = 0;
+        for (const [start, end] of WRITE_RANGES) {
+            totalBytes += end - start;
+        }
 
-            await this.write(packet);
-            await this.delay(50);
+        let bytesWritten = 0;
+        for (const [rangeStart, rangeEnd] of WRITE_RANGES) {
+            for (let addr = rangeStart; addr < rangeEnd && addr < data.length; addr += this.CHUNK_SIZE) {
+                const addrHi = (addr >> 8) & 0xFF;
+                const addrLo = addr & 0xFF;
+                const len = Math.min(this.CHUNK_SIZE, rangeEnd - addr, data.length - addr);
+                const chunk = data.slice(addr, addr + len);
 
-            if (onProgress) {
-                onProgress((addr + len) / data.length);
+                // Calculate checksum (sum of data bytes, mod 256)
+                let checksum = 0;
+                for (let i = 0; i < len; i++) {
+                    checksum = (checksum + chunk[i]) & 0xFF;
+                }
+
+                // Packet format: W + addrHi + addrLo + len + data + checksum
+                const packet = new Uint8Array(5 + len);
+                packet[0] = 0x57; // 'W'
+                packet[1] = addrHi;
+                packet[2] = addrLo;
+                packet[3] = len;
+                packet.set(chunk, 4);
+                packet[4 + len] = checksum;
+
+                console.log(`Write 0x${addr.toString(16).toUpperCase()}: ${len} bytes, checksum 0x${checksum.toString(16).toUpperCase()}`);
+                await this.write(packet);
+
+                // Wait for ACK (0x06) after each packet
+                try {
+                    await this.waitForAck(2000);
+                    console.log(`  ACK received`);
+                } catch (e) {
+                    console.error(`  NO ACK at 0x${addr.toString(16)}`);
+                    throw new Error(`Write failed at address 0x${addr.toString(16)}: no ACK`);
+                }
+
+                bytesWritten += len;
+                if (onProgress) {
+                    onProgress(bytesWritten / totalBytes);
+                }
             }
         }
+        console.log('Write complete!');
     },
 
     /**
@@ -684,9 +770,19 @@ const BLE = {
             }
         }
 
+        // Debug: show scan bitmap for first 8 channels
+        console.log('Scan bitmap byte 0x1920:', buffer[0x1920].toString(2).padStart(8, '0'),
+            '(CH1-8 scan:', data.channels.slice(0, 8).map(c => c.scanAdd ? '1' : '0').join(''), ')');
+
         // Encode settings
         const settingsOffset = 0x0C90;
         this.encodeSettings(buffer, settingsOffset, data.settings);
+
+        // Debug: show key settings being encoded
+        console.log('Encoding settings:');
+        console.log('  Menu Color:', data.settings.menuColor, '-> 0x1F2A =', buffer[0x1F2A]);
+        console.log('  Msg1:', data.settings.msg1, '-> 0x1C00');
+        console.log('  Msg3:', data.settings.msg3, '-> 0x1C20');
 
         return buffer;
     },

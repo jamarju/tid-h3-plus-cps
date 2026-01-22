@@ -156,6 +156,12 @@ const App = {
     async handleWrite() {
         if (!this.connected) return;
 
+        // SAFETY: Require rawData from a prior read to preserve unmapped bytes
+        if (!this.rawData) {
+            this.setStatus('Error: Must read from radio first before writing');
+            return;
+        }
+
         try {
             // Validate settings
             const validation = Settings.validate();

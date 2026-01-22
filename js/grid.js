@@ -138,10 +138,37 @@ const Grid = {
     attachEventListeners() {
         const grid = document.getElementById('channelGrid');
 
-        // Click to focus
+        // Track click timing for double-click detection
+        let lastClickTime = 0;
+        let lastClickCell = null;
+
+        // Click to focus (or toggle boolean cells)
         grid.addEventListener('click', (e) => {
             const cell = e.target.closest('.cell.editable');
-            if (cell) {
+            if (!cell) return;
+
+            // Don't handle clicks on inputs/selects when editing
+            if (this.editingCell && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) {
+                return;
+            }
+
+            const now = Date.now();
+            const isDoubleClick = (now - lastClickTime < 400) && (lastClickCell === cell);
+            lastClickTime = now;
+            lastClickCell = cell;
+
+            // If this looks like a double-click, don't handle - let dblclick handler take over
+            if (isDoubleClick) {
+                return;
+            }
+
+            const colIdx = parseInt(cell.dataset.col);
+            const col = this.columns[colIdx];
+
+            // Boolean cells toggle on single click
+            if (col.type === 'boolean') {
+                this.toggleBoolean(cell);
+            } else {
                 this.focusCell(cell);
             }
         });
@@ -149,19 +176,30 @@ const Grid = {
         // Double-click to edit
         grid.addEventListener('dblclick', (e) => {
             const cell = e.target.closest('.cell.editable');
-            if (cell) {
+            if (!cell) return;
+
+            // Don't re-edit if already editing this cell
+            if (this.editingCell === cell) return;
+
+            const colIdx = parseInt(cell.dataset.col);
+            const col = this.columns[colIdx];
+
+            // For booleans, double-click also toggles (single clicks toggle too)
+            if (col.type === 'boolean') {
+                this.toggleBoolean(cell);
+            } else {
                 this.startEditing(cell);
             }
         });
 
-        // Keyboard navigation
+        // Keyboard navigation - use capturing phase to handle before browser defaults
         grid.addEventListener('keydown', (e) => {
             if (this.editingCell) {
                 this.handleEditingKeydown(e);
             } else if (this.focusedCell) {
                 this.handleNavigationKeydown(e);
             }
-        });
+        }, true);
 
         // Copy/Paste at document level
         document.addEventListener('copy', (e) => this.handleCopy(e));
@@ -185,6 +223,26 @@ const Grid = {
             tr.classList.remove('selected');
         });
         cell.closest('tr').classList.add('selected');
+    },
+
+    /**
+     * Toggle a boolean cell value
+     * @param {HTMLElement} cell - Cell element
+     */
+    toggleBoolean(cell) {
+        const row = parseInt(cell.dataset.row);
+        const colIdx = parseInt(cell.dataset.col);
+        const col = this.columns[colIdx];
+        const channel = this.channels[row - 1];
+
+        // Toggle the value
+        channel[col.key] = !channel[col.key];
+
+        // Update display
+        cell.textContent = this.formatCellValue(channel[col.key], col);
+
+        // Focus the cell for keyboard navigation
+        this.focusCell(cell);
     },
 
     /**
@@ -258,8 +316,45 @@ const Grid = {
 
         cell.textContent = '';
         cell.appendChild(input);
+
+        // Handle blur - commit value when focus leaves
+        input.addEventListener('blur', () => {
+            // Small delay to allow click handlers to run first
+            setTimeout(() => {
+                if (this.editingCell === cell) {
+                    this.stopEditing(true);
+                }
+            }, 100);
+        });
+
+        // Handle change for selects - commit immediately on selection
+        if (input.tagName === 'SELECT') {
+            input.addEventListener('change', () => {
+                this.stopEditing(true);
+                this.moveToCell(0, 1); // Move down after selection
+            });
+        }
+
         input.focus();
-        input.select?.();
+
+        // For text inputs, select all text
+        if (input.tagName === 'INPUT') {
+            input.select();
+        }
+
+        // For selects, auto-expand the dropdown
+        if (input.tagName === 'SELECT') {
+            // Use showPicker for modern browsers, with a small delay for DOM stability
+            requestAnimationFrame(() => {
+                if (input.showPicker) {
+                    try {
+                        input.showPicker();
+                    } catch {
+                        // Ignore if showPicker fails (e.g., not triggered by user gesture)
+                    }
+                }
+            });
+        }
     },
 
     /**
@@ -304,6 +399,9 @@ const Grid = {
         cell.classList.remove('editing');
         cell.textContent = this.formatCellValue(channel[col.key], col);
         this.editingCell = null;
+
+        // Restore focus to the cell for keyboard navigation
+        this.focusCell(cell);
     },
 
     /**
