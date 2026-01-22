@@ -19,6 +19,7 @@ const App = {
         this.attachEventListeners();
         this.initializeData();
         this.updateUI();
+        this.updateGridState();
     },
 
     /**
@@ -96,12 +97,23 @@ const App = {
     },
 
     /**
-     * Initialize data with defaults
+     * Initialize UI components (empty until data is loaded)
      */
     initializeData() {
-        const data = Storage.createInitialData();
-        Grid.init(data.channels);
-        Settings.init(data.settings);
+        // Create empty channels for grid structure
+        const channels = [];
+        for (let i = 1; i <= 199; i++) {
+            channels.push({
+                channel: i, rxFreq: 0, txFreq: 0, frequencyHop: false,
+                decode: 'OFF', encode: 'OFF', txPower: 'HIGH', bandwidth: 'W',
+                busyLock: false, pttId: 'OFF', scanAdd: true, name: '', scramble: 0
+            });
+        }
+        // Empty settings
+        const settings = {};
+
+        Grid.init(channels);
+        Settings.init(settings);
     },
 
     /**
@@ -246,11 +258,10 @@ const App = {
 
             // Parse raw binary data
             this.rawData = result.rawData;
-            const channels = BLE.parseChannels(this.rawData);
-            const settings = BLE.parseSettings(this.rawData);
+            const parsed = BLE.parseMemory(this.rawData);
 
-            Grid.update(channels);
-            Settings.update(settings);
+            Grid.update(parsed.channels);
+            Settings.update(parsed.settings);
             Debug.render(this.rawData);
 
             this.updateGridState();
@@ -280,10 +291,13 @@ const App = {
             this.setStatus('Saving...');
 
             // Encode current UI state into rawData
-            BLE.encodeChannels(this.rawData, Grid.getData());
-            BLE.encodeSettings(this.rawData, Settings.getData());
+            const encoded = BLE.encodeMemory({
+                channels: Grid.getData(),
+                settings: Settings.getData(),
+                rawData: Array.from(this.rawData)
+            });
 
-            const result = await Storage.save(this.rawData);
+            const result = await Storage.save(encoded);
 
             if (result.cancelled) {
                 this.setStatus('Ready');
@@ -376,6 +390,9 @@ const App = {
     updateGridState() {
         const hasData = this.rawData !== null;
         const isDisabled = !hasData || this.isReading;
+
+        // Update Save button
+        this.elements.btnSave.disabled = !hasData;
 
         // Update all three panels
         this.elements.gridContainer.classList.toggle('disabled', isDisabled);
