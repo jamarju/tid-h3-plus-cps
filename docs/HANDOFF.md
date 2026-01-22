@@ -1,7 +1,7 @@
 # Handoff Document for Tidradio H3 Plus Web CPS
 
-**Last Updated:** January 22, 2026 (Session 8)
-**Status:** ALL SETTINGS + CHANNEL BITS MAPPED! Code and UI updated. **NEXT: Test write functionality.**
+**Last Updated:** January 22, 2026 (Session 9)
+**Status:** Debug tab with hex dump added! Write functionality still untested.
 
 ---
 
@@ -10,14 +10,31 @@
 Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, no frameworks.
 
 **Key Files:**
-- `index.html` - Main UI with tabs (Channels, Settings)
+- `index.html` - Main UI with tabs (Channels, Settings, Debug)
 - `js/ble.js` - BLE protocol, `parseSettings()` and `encodeSettings()` fully updated
+- `js/debug.js` - **NEW** Hex dump viewer with memory map (436 entries)
 - `js/settings.js` - Settings form handling, dropdown options
 - `docs/settings-reference.md` - **SOURCE OF TRUTH** for option values
 - `docs/memory-map.md` - **Complete memory layout documentation**
 - `docs/ble-protocol.md` - BLE connection and commands
 
 **Server:** `python -m http.server 8000` then open http://localhost:8000
+
+**Keyboard shortcuts:** Ctrl+1/2/3 to switch tabs, Ctrl+S save, Ctrl+O load
+
+---
+
+## Debug Tab
+
+The Debug tab shows an annotated hex dump of the 16KB memory:
+- **Green (#aaff66)**: Known/mapped bytes
+- **Red (#ffaaaa)**: Unknown bytes with data (not 0xFF) - investigate these!
+- **Gray**: Empty (0xFF)
+- **Hover**: Instant tooltip with address, description, value
+
+The memory map in `js/debug.js` has 436 entries covering all channels, names, settings, scan bitmap, etc.
+
+**Browser cache gotcha:** If CSS changes don't show, hard refresh with **Ctrl+Shift+R**.
 
 ---
 
