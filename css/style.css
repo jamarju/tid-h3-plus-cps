@@ -322,6 +322,95 @@ body {
     cursor: pointer;
 }
 
+/* Panel disabled state - shared by grid, settings, debug */
+.panel-disabled-message {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+    background: var(--bg-primary);
+    padding: 20px 32px;
+    border-radius: 8px;
+    border: 2px solid var(--accent-primary);
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 500;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.disabled .panel-disabled-message {
+    display: block;
+}
+
+/* Grid disabled state */
+.grid-container.disabled {
+    position: relative;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.grid-container.disabled::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+.grid-container.disabled table {
+    opacity: 0.4;
+}
+
+/* Settings disabled state */
+.settings-container.disabled {
+    position: relative;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.settings-container.disabled::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+.settings-container.disabled > *:not(.panel-disabled-message) {
+    opacity: 0.4;
+}
+
+/* Debug disabled state */
+.debug-container.disabled {
+    position: relative;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.debug-container.disabled::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+.debug-container.disabled > *:not(.panel-disabled-message) {
+    opacity: 0.4;
+}
+
 /* Settings Panel */
 .settings-container {
     flex: 1;

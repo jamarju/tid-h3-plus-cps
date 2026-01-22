@@ -87,9 +87,10 @@ All major UX issues resolved:
 
 ### Remaining Work
 
-1. **Discover additional settings** - Analog Settings (AM Vol Level) not found in 16KB
-2. **Firmware version** - Not in memory dump, likely retrieved via different command
-3. **Investigate OFFSET setting** - User reports it's NOT for frequency offset (shows "REJECT")
+1. **Optimize reads by skipping unknown areas** - Currently reads all 16KB. Could use READ_RANGES like WRITE_RANGES to skip unmapped regions and speed up read operations.
+2. **Discover additional settings** - Analog Settings (AM Vol Level) not found in 16KB
+3. **Firmware version** - Not in memory dump, likely retrieved via different command
+4. **Investigate OFFSET setting** - User reports it's NOT for frequency offset (shows "REJECT")
 
 ---
 
@@ -110,6 +111,7 @@ Reverse-engineered from ODMaster console capture. **Successfully tested** - menu
 [0x1900, 0x1980],  // Scan bitmap at 0x1920+
 [0x1C00, 0x1C40],  // Startup messages
 [0x1F20, 0x1F40],  // Menu color at 0x1F2A, other settings
+[0x3000, 0x3020],  // Extended: STE, PTT Delay, Alarm Mode, Talk Around
 ```
 
 **Debug logging added** - console shows each write address and ACK status.
@@ -141,4 +143,11 @@ Fixed all major Grid UI/UX issues in `js/grid.js`:
 4. **Auto-expand dropdowns**: Using `showPicker()` API on select elements when entering edit mode
 5. **Double-click fix**: Added click timing detection to prevent single-click handler from interfering with double-clicks
 6. **Input event handlers**: Added blur handler (with delay) and change handler for selects to auto-commit on selection
+
+Additional improvements:
+
+7. **Added 0x3000 write range**: Extended settings (STE, PTT Delay, Alarm Mode, Talk Around) now written to radio
+8. **Grid disabled state**: Grid shows overlay and message when no data loaded or during read operations
+   - CSS: `.grid-container.disabled` with overlay and `.grid-disabled-message`
+   - JS: `App.isReading` state, `App.updateGridState()` method
 

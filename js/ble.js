@@ -298,6 +298,7 @@ const BLE = {
             [0x1900, 0x1980],  // Scan bitmap at 0x1920+ (ODMaster skips 0x1980+)
             [0x1C00, 0x1C40],  // Startup messages (ODMaster skips 0x1C40-0x1F1F)
             [0x1F20, 0x1F40],  // Menu color at 0x1F2A, other settings
+            [0x3000, 0x3020],  // Extended: STE, PTT Delay, Alarm Mode, Talk Around
         ];
 
         let totalBytes = 0;

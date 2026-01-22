@@ -33,7 +33,8 @@
             <div class="grid-toolbar">
                 <span class="grid-info">199 Channels | Arrow keys to navigate | Enter to edit | Ctrl+C/V copy/paste | Ctrl+1/2/3 switch tabs</span>
             </div>
-            <div class="grid-container" id="gridContainer">
+            <div class="grid-container disabled" id="gridContainer">
+                <div class="panel-disabled-message" id="gridDisabledMessage">Read from radio or load a file to edit channels</div>
                 <table class="channel-grid" id="channelGrid">
                     <thead>
                         <tr>
@@ -59,7 +60,8 @@
         </section>
 
         <section id="settingsPanel" class="panel">
-            <div class="settings-container" id="settingsContainer">
+            <div class="settings-container disabled" id="settingsContainer">
+                <div class="panel-disabled-message" id="settingsDisabledMessage">Read from radio or load a file to edit settings</div>
                 <div class="settings-group">
                     <h3>Display</h3>
                     <div class="setting-row">
@@ -462,7 +464,8 @@
             <div class="debug-toolbar">
                 <span class="debug-info">Memory Dump (16 KB) | <span class="legend-known">Known</span> <span class="legend-unknown">Unknown Data</span> <span class="legend-empty">Empty (0xFF)</span> | Ctrl+1/2/3 switch tabs</span>
             </div>
-            <div class="debug-container" id="debugContainer">
+            <div class="debug-container disabled" id="debugContainer">
+                <div class="panel-disabled-message" id="debugDisabledMessage">Read from radio or load a file to view memory</div>
                 <div class="hexdump" id="hexdump">
                     <div class="hexdump-placeholder">Read from radio to view memory dump</div>
                 </div>

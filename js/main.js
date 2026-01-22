@@ -6,6 +6,7 @@ const App = {
     // State
     connected: false,
     rawData: null,
+    isReading: false,
 
     // UI Elements
     elements: {},
@@ -35,7 +36,13 @@ const App = {
             progressContainer: document.getElementById('progressContainer'),
             progressBar: document.getElementById('progressBar'),
             tabs: document.querySelectorAll('.tab'),
-            panels: document.querySelectorAll('.panel')
+            panels: document.querySelectorAll('.panel'),
+            gridContainer: document.getElementById('gridContainer'),
+            gridDisabledMessage: document.getElementById('gridDisabledMessage'),
+            settingsContainer: document.getElementById('settingsContainer'),
+            settingsDisabledMessage: document.getElementById('settingsDisabledMessage'),
+            debugContainer: document.getElementById('debugContainer'),
+            debugDisabledMessage: document.getElementById('debugDisabledMessage')
         };
     },
 
@@ -130,6 +137,8 @@ const App = {
         try {
             this.setStatus('Reading...');
             this.showProgress(true);
+            this.isReading = true;
+            this.updateGridState();
 
             const memory = await BLE.readMemory((progress) => {
                 this.setProgress(progress);
@@ -143,9 +152,13 @@ const App = {
             Debug.render(memory);
 
             this.showProgress(false);
+            this.isReading = false;
+            this.updateGridState();
             this.setStatus('Read complete - ' + memory.length + ' bytes');
         } catch (err) {
             this.showProgress(false);
+            this.isReading = false;
+            this.updateGridState();
             this.setStatus('Read failed: ' + err.message);
         }
     },
@@ -214,6 +227,7 @@ const App = {
                 Debug.render(this.rawData);
             }
 
+            this.updateGridState();
             this.setStatus('Loaded: ' + result.filename);
         } catch (err) {
             this.setStatus('Load failed: ' + err.message);
@@ -324,6 +338,31 @@ const App = {
      */
     setProgress(progress) {
         this.elements.progressBar.style.width = (progress * 100) + '%';
+    },
+
+    /**
+     * Update panels enabled/disabled state
+     * Panels are disabled when no data has been loaded or during read operations
+     */
+    updateGridState() {
+        const hasData = this.rawData !== null;
+        const isDisabled = !hasData || this.isReading;
+
+        // Update all three panels
+        this.elements.gridContainer.classList.toggle('disabled', isDisabled);
+        this.elements.settingsContainer.classList.toggle('disabled', isDisabled);
+        this.elements.debugContainer.classList.toggle('disabled', isDisabled);
+
+        // Update messages
+        if (this.isReading) {
+            this.elements.gridDisabledMessage.textContent = 'Reading from radio...';
+            this.elements.settingsDisabledMessage.textContent = 'Reading from radio...';
+            this.elements.debugDisabledMessage.textContent = 'Reading from radio...';
+        } else if (!hasData) {
+            this.elements.gridDisabledMessage.textContent = 'Read from radio or load a file to edit channels';
+            this.elements.settingsDisabledMessage.textContent = 'Read from radio or load a file to edit settings';
+            this.elements.debugDisabledMessage.textContent = 'Read from radio or load a file to view memory';
+        }
     }
 };
 
