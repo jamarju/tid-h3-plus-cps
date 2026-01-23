@@ -1,7 +1,7 @@
 # Handoff Document for Tidradio H3 Plus Web CPS
 
-**Last Updated:** January 22, 2026
-**Status:** Feature complete. Tested with FW v1.0.45.
+**Last Updated:** January 23, 2026 (Session 2)
+**Status:** Feature complete. Tested with FW v1.0.45. Ready to discover VFO frequencies.
 
 ---
 
@@ -21,6 +21,10 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 - `ble-protocol.md` - BLE connection and commands
 - `thoughts.md` - Future considerations (read optimization trade-offs)
 
+**Claude Commands** (in `.claude/commands/`):
+- `my_harakiri.md` - Update CLAUDE.md before context death
+- `my_discover.md` - Interactive protocol for discovering new settings
+
 **Server:** `python -m http.server 8000` then open http://localhost:8000
 
 **Keyboard shortcuts:** Ctrl+1/2/3 to switch tabs, Ctrl+S save, Ctrl+O load
@@ -29,15 +33,17 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 
 ## Remaining Work
 
-1. **Verify DTCS subtone encoding** - Not sure if DCS codes are properly encoded. Radio has options for normal and reversed polarity (DCS-N vs DCS-I) - need to verify these work correctly.
+1. **Discover VFO frequencies** - IN PROGRESS. VFO A=145.500 MHz, B=437.550 MHz. Likely 32-bit integers (4 bytes each).
 
-2. **Discover additional settings** - Analog Settings (AM Vol Level) not found in 16KB dump.
+2. **Verify DTCS subtone encoding** - Not sure if DCS codes are properly encoded. Radio has options for normal and reversed polarity (DCS-N vs DCS-I) - need to verify these work correctly.
 
-3. **Firmware version** - Not in memory dump, likely retrieved via different BLE command.
+3. **Discover additional settings** - Analog Settings (AM Vol Level) not found in 16KB dump.
 
-4. **Investigate OFFSET setting** - User reports it's NOT for frequency offset (shows "REJECT").
+4. **Firmware version** - Not in memory dump, likely retrieved via different BLE command.
 
-5. **STUN/KILL settings** - Placeholder fields exist in code but memory offsets not discovered.
+5. **Investigate OFFSET setting** - User reports it's NOT for frequency offset (shows "REJECT").
+
+6. **STUN/KILL settings** - Placeholder fields exist in code but memory offsets not discovered.
 
 ---
 
@@ -53,29 +59,12 @@ The Debug tab shows an annotated hex dump of the 16KB memory:
 
 ---
 
-## Discovery Procedure
+## Claude Commands
 
-**Human + Claude workflow for discovering new setting offsets:**
+Two custom commands available via `/my_harakiri` and `/my_discover`:
 
-| Step | Who | Action |
-|------|-----|--------|
-| 1 | Human | Connect to radio via app, click **Read** |
-| 2 | Human | Tell Claude "ready" |
-| 3 | **Claude** | Run: `window.memBefore = Array.from(App.rawData)` |
-| 4 | Human | Change ONE setting on the physical radio |
-| 5 | Human | Click **Read** in the app, tell Claude "done" |
-| 6 | **Claude** | Run comparison script (below), report offset |
-
-**Comparison script:**
-```javascript
-var before = window.memBefore; var after = App.rawData; var changes = [];
-for(var i=0; i<after.length; i++) if(before[i] !== after[i])
-  changes.push("0x"+i.toString(16).toUpperCase()+": "+before[i]+" -> "+after[i]);
-window.memBefore = Array.from(after); // auto-save for next iteration
-changes.length ? changes.join(", ") : "No changes detected"
-```
-
-When discovering a setting, look up the Options column in `settings-reference.md` to map index to value correctly.
+- **my_harakiri**: Updates this CLAUDE.md file before context window fills up
+- **my_discover**: Interactive protocol for discovering new settings (see `.claude/commands/my_discover.md` for full protocol)
 
 ---
 
