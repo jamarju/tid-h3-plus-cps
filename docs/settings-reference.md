@@ -158,3 +158,18 @@ Settings are spread across multiple memory regions:
 - 0x1F20: **MIC Gain [33]** ✓ VERIFIED
 
 **Other areas TBD** - Roger Beep, remaining settings need discovery
+
+---
+
+## Non-Menu Settings (Submenu/Hidden)
+
+These settings are not part of the main 1-42 menu system but are accessible through submenus.
+
+### Scan Settings (Submenu)
+
+| Setting | Memory Location | Options | Encoding |
+|---------|----------------|---------|----------|
+| Scan Mode | 0x0CA1 bits 6-7 | TO, CO, SE | 0b00=TO, 0b01=CO, 0b10=SE |
+| Scan Hang Time | 0x1F2F | 0.5s, 1.0s, 1.5s, ..., 9.5s, 10.0s | (seconds * 2) - 1 (values 0-19) |
+| Scan Freq Range Upper | 0x1F2B-0x1F2C | Numeric (MHz) | 16-bit little-endian |
+| Scan Freq Range Lower | 0x1F2D | Numeric (MHz) | 8-bit |

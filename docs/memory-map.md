@@ -1,6 +1,6 @@
 # Tidradio H3 Plus Memory Map
 
-**Last Updated:** January 22, 2026 (Session 8)
+**Last Updated:** January 23, 2026 (Session 10)
 **Total Memory:** 16KB (0x0000-0x3FFF), but radio reports 100% at ~8KB
 
 ---
@@ -18,8 +18,10 @@ Based on actual memory scan (non-0xFF bytes):
 | Channel Names | 0x0D40+ | 8b/ch | 199 names × 8 bytes | ✅ VERIFIED |
 | ANI/ID Block | 0x1820-0x182F | 16b | ANI edit, IDs | ✅ VERIFIED |
 | **Scan Bitmap** | 0x1920-0x1938 | 25b | 199 channels, 1 bit each | ✅ VERIFIED |
+| **VFO A Frequency** | 0x1950-0x195F | 16b | RX/TX freq, tones, flags | ✅ VERIFIED |
+| **VFO B Frequency** | 0x1960-0x196F | 16b | RX/TX freq, tones, flags | ✅ VERIFIED |
 | Startup Messages | 0x1C00-0x1C2F | 48b | 3 × 16-byte messages | ✅ VERIFIED |
-| Secondary Settings | 0x1F20-0x1F2A | 11b | MIC, language, display, color | ✅ VERIFIED |
+| Secondary Settings | 0x1F20-0x1F2F | 16b | MIC, language, display, color, scan settings | ✅ VERIFIED |
 | Extended Settings | 0x3000-0x300C | 13b | STE, Alarm, PTT Delay, etc | ✅ VERIFIED |
 | Active VFO | 0x3004 | 1b | 0=A, 1=B | ✅ VERIFIED |
 
@@ -66,6 +68,7 @@ Based on actual memory scan (non-0xFF bytes):
 | 0 | Voice | [11] | 0=off, 1=on |
 | 2 | Keypad Beep | [7] | 0=off, 1=on |
 | 4 | Keypad Lock | [9] | 0=off, 1=on |
+| 6-7 | Scan Mode | - | 0b00=TO, 0b01=CO, 0b10=SE |
 
 ### 0x0CA2 - Flags C
 | Bit | Setting | Menu # | Values |
@@ -143,6 +146,21 @@ Used when Power On Display [14] = "message"
 
 ---
 
+## VFO Frequency Storage (0x1950, 0x1960) - VERIFIED
+
+VFO A and B frequencies are stored using the same 16-byte structure as channels:
+
+| Address | VFO | Structure |
+|---------|-----|-----------|
+| 0x1950-0x195F | VFO A | RX freq (4b) + TX freq (4b) + RX tone (2b) + TX tone (2b) + flags (4b) |
+| 0x1960-0x196F | VFO B | Same structure |
+
+**Encoding:** Identical to channel data structure (see Channel Data section)
+
+**Note:** VFO frequencies use BCD little-endian encoding, same as channels. Names are NOT stored for VFOs.
+
+---
+
 ## Settings Block 5: Secondary (0x1F20-0x1F3F)
 
 | Offset | Setting | Menu # | Encoding |
@@ -151,6 +169,9 @@ Used when Power On Display [14] = "message"
 | 0x1F28 | Language | [21] | 0=en, 1=cn, 2=tr, 3=ru, 4=de, 5=es, 6=it, 7=fr |
 | 0x1F29 | Display | [15] | 0=single, 1=dual, 2=classic |
 | 0x1F2A | Menu Color | [42] | 0=blue,1=red,2=green,3=yellow,4=purple,5=orange,6=lightblue,7=cyan,8=gray,9=darkblue,10=lightgreen,11=brown,12=pink,13=B.red,14=G.blue,15=L.gray,16=LG.blue,17=LB.blue |
+| 0x1F2B-0x1F2C | Scan Freq Range Upper | - | 16-bit little-endian, MHz (e.g. 0x0257 = 599 MHz) |
+| 0x1F2D | Scan Freq Range Lower | - | 8-bit, MHz (e.g. 0x42 = 66 MHz) |
+| 0x1F2F | Scan Hang Time | - | (seconds * 2) - 1, range: 0.5s-10.0s (values 0-19) |
 
 ---
 
@@ -237,7 +258,6 @@ These memory regions contain data but purpose is unknown:
 
 | Address Range | Size | Notes |
 |---------------|------|-------|
-| 0x00A0-0x00BF | 32b | Early header area (purpose unknown) |
 | 0x0CC0-0x0CD3 | 20b | After main settings (purpose unknown) |
 | 0x0D88-0x0D97 | 16b | Between names and channels |
 | 0x1380-0x13FF | 128b | Unknown block - possibly FM presets? |
@@ -246,8 +266,8 @@ These memory regions contain data but purpose is unknown:
 | 0x183F-0x189F | scattered | Single bytes every 16 (pattern?) |
 | 0x18AF-0x18FF | ~80b | Unknown |
 | 0x1901-0x191F | 31b | Before scan bitmap |
-| 0x1939-0x1957 | ~30b | After scan bitmap |
-| 0x195C-0x1BFF | ~1.7KB | Large unknown (excl. 0x1C00-0x1C2F messages) |
+| 0x1939-0x194F | ~23b | Between scan bitmap and VFO A |
+| 0x1970-0x1BFF | ~656b | After VFO B |
 | 0x1F2B-0x1F3F | 21b | After menu color |
 | 0x300D-0x3019 | 13b | After Talk Around |
 | 0x303C-0x3113 | ~215b | Extended region unknowns |
@@ -283,8 +303,9 @@ These memory regions contain data but purpose is unknown:
 
 **Other:**
 - Scan bitmap (separate from channel data!)
-- VFO A/B current channel
-- Active VFO indicator
+- VFO A/B current channel (0x0CA4-0x0CA5)
+- VFO A/B frequencies (0x1950, 0x1960) - same structure as channels
+- Active VFO indicator (0x3004)
 - Startup messages (3 × 16 chars)
 - ANI-Edit (3 digits)
 
