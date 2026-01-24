@@ -552,7 +552,8 @@ body {
 }
 
 .setting-row select,
-.setting-row input[type="text"] {
+.setting-row input[type="text"],
+.setting-row input[type="number"] {
     width: 120px;
     padding: 5px 8px;
     border: 1px solid var(--border-color);
@@ -564,7 +565,8 @@ body {
 }
 
 .setting-row select:focus,
-.setting-row input[type="text"]:focus {
+.setting-row input[type="text"]:focus,
+.setting-row input[type="number"]:focus {
     outline: none;
     border-color: var(--accent-primary);
 }

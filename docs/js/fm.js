@@ -275,6 +275,10 @@ const FMRadio = {
                 e.preventDefault();
                 this.startEditing(this.focusedCell);
                 break;
+            case 'Delete':
+                e.preventDefault();
+                this.clearCell();
+                break;
             case 'Home':
                 e.preventDefault();
                 this.moveToFirstCell();
@@ -336,6 +340,17 @@ const FMRadio = {
         if (cells.length > 0) {
             this.focusCell(cells[cells.length - 1]);
         }
+    },
+
+    /**
+     * Clear the current cell
+     */
+    clearCell() {
+        if (!this.focusedCell) return;
+
+        const row = parseInt(this.focusedCell.dataset.row);
+        this.fmChannels[row - 1] = 0;
+        this.focusedCell.textContent = '';
     },
 
     /**
