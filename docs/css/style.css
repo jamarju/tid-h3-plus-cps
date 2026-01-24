@@ -555,6 +555,8 @@ body {
 .setting-row input[type="text"],
 .setting-row input[type="number"] {
     width: 120px;
+    min-width: 80px;
+    flex-shrink: 1;
     padding: 5px 8px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
@@ -573,6 +575,8 @@ body {
 
 .setting-row .text-input {
     width: 140px;
+    min-width: 80px;
+    flex-shrink: 1;
     font-family: var(--font-mono);
 }
 
