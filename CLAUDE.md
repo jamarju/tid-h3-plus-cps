@@ -1,7 +1,7 @@
 # Handoff Document for Tidradio H3 Plus Web CPS
 
-**Last Updated:** January 24, 2026 (Session 16)
-**Status:** All discovered settings implemented in UI! Full feature parity with ODMaster. FM channels grid complete with spreadsheet navigation. Tab reordering. Python scripts organized. Ready for user testing.
+**Last Updated:** January 24, 2026 (Session 17)
+**Status:** Critical channel cycling bug fixed! Discovered Channel Valid Bitmap (0x1900-0x1918). UI polish complete: input styling, tooltips clarified, Debug tab hidden by default. README restored.
 
 ---
 
@@ -32,9 +32,9 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 **Server:** `cd docs && uv run python -m http.server 8000` then open http://localhost:8000
 
 **Keyboard shortcuts:**
-- Tab switching: Ctrl+1 (Settings), Ctrl+2 (Channels), Ctrl+3 (FM Channels), Ctrl+4 (Debug)
+- Tab switching: Ctrl+1 (Settings), Ctrl+2 (Channels), Ctrl+3 (FM Channels), Ctrl+4 (enable Debug - stays visible until refresh)
 - File operations: Ctrl+S (save), Ctrl+O (load)
-- Grid navigation: Arrow keys, Enter (edit), Escape (cancel), Tab (next cell), Ctrl+C/V (copy/paste)
+- Grid navigation: Arrow keys, Enter (edit), Escape (cancel), Tab (next cell), Delete (clear), Ctrl+C/V (copy/paste)
 
 **Python Tools** (in `scripts/` directory):
 - All Python helper scripts moved to `scripts/` for organization
@@ -96,6 +96,76 @@ All discovered settings now have UI implementation! ✅
 
 ---
 
+## Session 17 Critical Bug Fix
+
+**MAJOR DISCOVERY: Channel Valid Bitmap (0x1900-0x1918)**
+
+**The Bug:**
+After factory reset, radio got stuck on CH1 - couldn't cycle to other channels with UP/DOWN even though channels had frequencies programmed.
+
+**Root Cause:**
+- Discovered undocumented "Channel Valid Bitmap" at 0x1900-0x1918
+- 1 bit per channel (1=valid/can cycle to, 0=empty/skip)
+- Radio only allows cycling to channels with bit=1 in this bitmap
+- Factory reset sets all bits to 0 except CH1 → stuck on CH1!
+- App wasn't reading/writing this bitmap at all
+
+**The Fix:**
+- Added channel valid bitmap encoding in `encodeMemory()` - sets bit=1 for channels with rxFreq > 0
+- Included 0x1900-0x1920 in `WRITE_RANGES_CHANNELS` write range
+- App now auto-generates the bitmap from channel data on every write
+- Updated `memory-map.md` with full documentation of the bitmap
+- Updated `debug.js` to show bitmap as known (green)
+
+**Testing:**
+- User loaded broken file (stuck on CH1), clicked Write Channels → channels now cycle correctly
+- The bitmap is auto-regenerated from Grid data, fixing corrupted/missing bitmap
+
+**This bitmap is SEPARATE from the scan bitmap (0x1920):**
+- 0x1900 = Channel Valid (controls which channels can be accessed via UP/DOWN)
+- 0x1920 = Scan Enable (controls which channels are included in scan)
+
+**Encoding rule:** For each channel, set bit=1 if `channel.rxFreq > 0`, else 0.
+
+---
+
+## Session 17 UI Polish
+
+**Input Styling Fix:**
+- Fixed input overflow issue with long labels (e.g., "FM VFO Frequency (MHz)")
+- Added `flex-shrink: 1` and `min-width: 80px` to all setting inputs
+- Text and number inputs now have consistent dark styling
+
+**Tooltip Clarifications:**
+- Squelch: "Higher level = stronger signal required" (clearer for non-native speakers)
+- VOX: "Higher level = more sensitive microphone"
+- Power Save: "Higher level = longer sleep, may miss audio start"
+- Tone Burst: Removed "older repeater" mention, explained PF1/PF2 assignment needed
+- PTT Delay: Noted function is unclear (user can't notice difference)
+- Alarm Mode: Local=flashlight flashes, TX=10s alarm/2s pause/repeat
+
+**PONMGS Dropdown Fix:**
+- Was: 0=OFF, 1=MSG, 2=Voltage (WRONG!)
+- Now: 0=Voltage, 1=Message, 2=Picture (CORRECT!)
+- Picture shows Tidradio logo, Message shows custom 3-line text
+
+**FM Grid:**
+- Added Delete key support (was missing, now matches Channels grid)
+- Added `clearCell()` method
+
+**Debug Tab:**
+- Now hidden by default (keeps UI cleaner)
+- Press Ctrl+4 to permanently enable it (stays visible until page refresh)
+- Updated all toolbar hints to reflect this
+- 0x0CA6 mystery byte shows red (unknown) since we don't know what it controls yet
+
+**README:**
+- Restored accidentally deleted content from session 11
+- Added `.DS_Store` to `.gitignore` and removed from repo
+- Fixed broken image paths (moved `img/` from `docs/img/` to root)
+
+---
+
 ## Session 16 Implementation Summary
 
 **Major UI Refactoring:**
@@ -149,6 +219,24 @@ All discovered settings now have UI implementation! ✅
 
 5. **Investigate OFFSET setting** - User reports it's NOT for frequency offset (shows "REJECT").
 
+## Known Issues & Gotchas (Session 17)
+
+**Channel Valid Bitmap (0x1900) - CRITICAL:**
+- Factory reset sets all bits to 0 except CH1
+- Without this bitmap, radio can't cycle past CH1 even with frequencies programmed
+- App now auto-generates this bitmap on every write (bit=1 if rxFreq > 0)
+- If user reports "stuck on CH1" after factory reset: load any file and click Write
+
+**Mystery Byte 0x0CA6:**
+- Changed from 1→0 in bad file but didn't affect the stuck-on-CH1 bug
+- Located between VFO channel selectors (0x0CA4-0x0CA5) and VOX level (0x0CA7)
+- Purpose unknown - needs further investigation
+- Shows red in Debug tab (unknown)
+
+**Grid Navigation:**
+- Delete key now clears cells in both Channels and FM grids
+- Both grids have identical keyboard navigation behavior
+
 ## Known Issues & Gotchas (Session 16)
 
 **FM Grid Navigation:**
@@ -200,7 +288,7 @@ Reverse-engineered from ODMaster console capture. Successfully tested.
 |------|-------------|
 | **All** | Full write - channels + settings + FM + extended |
 | **Settings Only** | Settings without channels |
-| **Channels Only** | Channels without settings |
+| **Channels Only** | Channels + channel names + channel valid bitmap + scan bitmap |
 | **FM Radio Only** | FM channels + FM settings only |
 
 See `docs/ble-protocol.md` for full protocol details.
