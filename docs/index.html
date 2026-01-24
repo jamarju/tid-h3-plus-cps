@@ -36,13 +36,13 @@
         <button class="tab active" data-tab="settings">Settings</button>
         <button class="tab" data-tab="channels">Channels</button>
         <button class="tab" data-tab="fmchannels">FM Channels</button>
-        <button class="tab" data-tab="debug">Debug</button>
+        <button class="tab hidden" data-tab="debug">Debug</button>
     </nav>
 
     <main class="main-content">
         <section id="channelsPanel" class="panel">
             <div class="grid-toolbar">
-                <span class="grid-info">199 Channels | Arrow keys to navigate | Enter to edit | Ctrl+C/V copy/paste | Ctrl+1/2/3/4 switch tabs</span>
+                <span class="grid-info">199 Channels | Arrow keys to navigate | Enter to edit | Ctrl+C/V copy/paste | Ctrl+1/2/3 switch tabs, Ctrl+4 enable debug</span>
             </div>
             <div class="grid-container disabled" id="gridContainer">
                 <div class="panel-disabled-message" id="gridDisabledMessage">Read from radio or load a file to edit channels</div>
@@ -561,7 +561,7 @@
 
         <section id="fmchannelsPanel" class="panel">
             <div class="grid-toolbar">
-                <span class="grid-info">25 FM Channels (88.0-108.0 MHz) | Ctrl+1/2/3/4 switch tabs</span>
+                <span class="grid-info">25 FM Channels (88.0-108.0 MHz) | Ctrl+1/2/3 switch tabs, Ctrl+4 enable debug</span>
             </div>
             <div class="fm-container disabled" id="fmContainer">
                 <div class="panel-disabled-message" id="fmDisabledMessage">Read from radio or load a file to edit FM channels</div>
@@ -580,7 +580,7 @@
 
         <section id="debugPanel" class="panel">
             <div class="debug-toolbar">
-                <span class="debug-info">Memory Dump (16 KB) | <span class="legend-known">Known</span> <span class="legend-unknown">Unknown Data</span> <span class="legend-empty">Empty (0xFF)</span> | Ctrl+1/2/3/4 switch tabs</span>
+                <span class="debug-info">Memory Dump (16 KB) | <span class="legend-known">Known</span> <span class="legend-unknown">Unknown Data</span> <span class="legend-empty">Empty (0xFF)</span> | Ctrl+1/2/3 switch tabs</span>
             </div>
             <div class="debug-container disabled" id="debugContainer">
                 <div class="panel-disabled-message" id="debugDisabledMessage">Read from radio or load a file to view memory</div>

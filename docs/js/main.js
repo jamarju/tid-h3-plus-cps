@@ -365,6 +365,9 @@ const App = {
         }
         if (e.ctrlKey && e.key === '4') {
             e.preventDefault();
+            // Enable debug tab (remove hidden class) and switch to it
+            const debugTab = document.querySelector('.tab[data-tab="debug"]');
+            debugTab.classList.remove('hidden');
             this.switchTab('debug');
         }
     },

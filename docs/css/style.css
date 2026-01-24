@@ -253,6 +253,10 @@ body {
     background: var(--accent-primary);
 }
 
+.tab.hidden {
+    display: none;
+}
+
 /* Main Content */
 .main-content {
     flex: 1;
