@@ -145,7 +145,7 @@
                 <div class="settings-group">
                     <h3>Audio</h3>
                     <div class="setting-row">
-                        <label for="squelchLevel" title="Minimum signal strength to open the speaker. Higher levels require stronger signals - use higher values in noisy environments."><span class="setting-index">01</span> Squelch Level</label>
+                        <label for="squelchLevel" title="Minimum signal strength to open the speaker. Higher level = stronger signal required to hear audio. Use higher levels in noisy environments to reduce static."><span class="setting-index">01</span> Squelch Level</label>
                         <select id="squelchLevel">
                             <option value="0">OFF</option>
                             <option value="1">Level 1</option>
@@ -212,7 +212,7 @@
                         <input type="checkbox" id="ste">
                     </div>
                     <div class="setting-row">
-                        <label for="toneBurst" title="Brief tone sent at start of transmission to open repeater squelch (for older repeaters)"><span class="setting-index">24</span> Tone Burst</label>
+                        <label for="toneBurst" title="Selects tone frequency (1000Hz/1450Hz/1750Hz/2100Hz). To transmit this tone, assign PF1 or PF2 button to 'Tone' function."><span class="setting-index">24</span> Tone Burst</label>
                         <select id="toneBurst">
                             <option value="0">1000Hz</option>
                             <option value="1">1450Hz</option>
@@ -260,7 +260,7 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label for="pttDelay" title="Delay before audio is transmitted after pressing PTT. Allows repeater time to open before you speak."><span class="setting-index">20</span> PTT Delay</label>
+                        <label for="pttDelay" title="Delay before audio is transmitted after pressing PTT (100-1000ms). Function unclear - may affect repeater timing."><span class="setting-index">20</span> PTT Delay</label>
                         <select id="pttDelay">
                             <option value="0">100ms</option>
                             <option value="1">200ms</option>
@@ -298,7 +298,7 @@
                 <div class="settings-group">
                     <h3>VOX</h3>
                     <div class="setting-row">
-                        <label for="voxGain" title="Voice-activated transmit sensitivity. Higher levels trigger on quieter sounds. Useful for hands-free operation."><span class="setting-index">03</span> VOX Level</label>
+                        <label for="voxGain" title="Voice-activated transmit sensitivity. Higher level = more sensitive microphone (triggers on quieter sounds). Useful for hands-free operation."><span class="setting-index">03</span> VOX Level</label>
                         <select id="voxGain">
                             <option value="0">OFF</option>
                             <option value="1">Level 1</option>
@@ -390,7 +390,7 @@
                 <div class="settings-group">
                     <h3>Power Save</h3>
                     <div class="setting-row">
-                        <label for="save" title="Battery saver duty cycle. Radio sleeps between receive checks. Higher ratios save more battery but may miss quick transmissions."><span class="setting-index">08</span> Power Save</label>
+                        <label for="save" title="Battery saver duty cycle. Radio sleeps between receive checks. Higher level = longer sleep cycles (more battery savings but may miss the start of incoming audio)."><span class="setting-index">08</span> Power Save</label>
                         <select id="save">
                             <option value="0">OFF</option>
                             <option value="1">Level 1 (1:1)</option>
@@ -428,7 +428,7 @@
                 <div class="settings-group">
                     <h3>Alarm</h3>
                     <div class="setting-row">
-                        <label for="alarmMode" title="On Site: local alarm only. TX Alarm: transmits alarm signal to alert others."><span class="setting-index">22</span> Alarm Mode</label>
+                        <label for="alarmMode" title="On Site: flashlight flashes quickly as local alarm. TX Alarm: transmits alarm signal for 10s, pauses 2s, repeats."><span class="setting-index">22</span> Alarm Mode</label>
                         <select id="alarmMode">
                             <option value="0">On Site</option>
                             <option value="2">TX Alarm</option>
@@ -536,11 +536,11 @@
                 <div class="settings-group">
                     <h3>Power On Message</h3>
                     <div class="setting-row">
-                        <label for="ponmgs" title="What to show on boot: OFF=nothing, MSG=custom messages, Voltage=battery voltage"><span class="setting-index">14</span> PONMGS</label>
+                        <label for="ponmgs" title="What to show on power-up: Voltage=battery voltage, Message=custom 3-line message, Picture=Tidradio logo"><span class="setting-index">14</span> PONMGS</label>
                         <select id="ponmgs">
-                            <option value="0">OFF</option>
-                            <option value="1">MSG</option>
-                            <option value="2">Voltage</option>
+                            <option value="0">Voltage</option>
+                            <option value="1">Message</option>
+                            <option value="2">Picture</option>
                         </select>
                     </div>
                     <div class="setting-row">
