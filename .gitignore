@@ -5,6 +5,9 @@
 # Temporary files
 tmp/
 
+# macOS
+.DS_Store
+
 # Binary dumps and firmware
 dumps/
 firmware/
