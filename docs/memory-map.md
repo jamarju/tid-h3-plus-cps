@@ -1,7 +1,9 @@
 # Tidradio H3 Plus Memory Map
 
-**Last Updated:** January 24, 2026 (Session 14)
+**Last Updated:** January 24, 2026 (Session 17)
 **Total Memory:** 16KB (0x0000-0x3FFF), but radio reports 100% at ~8KB
+
+**Session 17 Discovery:** Channel Valid Bitmap (0x1900-0x1918) - controls which channels can be cycled to with UP/DOWN buttons. This was causing the "stuck on CH1" bug after factory reset.
 
 ---
 
@@ -18,6 +20,7 @@ Based on actual memory scan (non-0xFF bytes):
 | **FM Channels** | 0x0CD0-0x0D33 | 100b | 25 FM channels × 4 bytes | ✅ VERIFIED |
 | Channel Names | 0x0D40+ | 8b/ch | 199 names × 8 bytes | ✅ VERIFIED |
 | ANI/ID Block | 0x1820-0x182F | 16b | ANI edit, IDs | ✅ VERIFIED |
+| **Channel Valid Bitmap** | 0x1900-0x1918 | 25b | 199 channels, 1 bit each (controls which channels can be cycled to) | ✅ VERIFIED |
 | **Scan Bitmap** | 0x1920-0x1938 | 25b | 199 channels, 1 bit each | ✅ VERIFIED |
 | **FM Scan Bitmap** | 0x1940-0x1943 | 4b | 25 FM channels, 1 bit each | ✅ VERIFIED |
 | **VFO A Frequency** | 0x1950-0x195F | 16b | RX/TX freq, tones, flags | ✅ VERIFIED |
@@ -137,6 +140,26 @@ Used when Power On Display [14] = "message"
 | Offset | Setting | Menu # | Encoding |
 |--------|---------|--------|----------|
 | 0x1820-0x1822 | ANI-Edit | [16] | 3 bytes, one digit each (0-9) |
+
+---
+
+## Channel Valid Bitmap (0x1900+) - VERIFIED
+
+**CRITICAL:** This bitmap controls which channels the radio considers "valid/programmed" and allows cycling to with UP/DOWN buttons.
+
+| Offset | Channels | Encoding |
+|--------|----------|----------|
+| 0x1900 | CH1-8 | Bit 0=CH1, Bit 7=CH8; 1=Valid, 0=Empty |
+| 0x1901 | CH9-16 | Same pattern |
+| ... | ... | Continues for all 199 channels |
+
+**Behavior:**
+- Bit=1: Channel is valid/programmed, can be accessed via UP/DOWN
+- Bit=0: Channel is empty/invalid, radio skips it during channel cycling
+
+**Important:** Even if a channel has frequency data, if this bit=0, the radio won't let you cycle to it. Factory reset sets all bits to 0 except CH1, which is why the radio gets stuck on CH1 after reset.
+
+**Encoding rule:** Set bit=1 if channel has rxFreq > 0.
 
 ---
 
@@ -319,7 +342,7 @@ These memory regions contain data but purpose is unknown:
 | 0x180F-0x182F | 33b | Around ANI area (extra IDs?) |
 | 0x183F-0x189F | scattered | Single bytes every 16 (pattern?) |
 | 0x18AF-0x18FF | ~80b | Unknown |
-| 0x1901-0x191F | 31b | Before scan bitmap |
+| 0x1919-0x191F | 7b | After channel valid bitmap |
 | 0x1939-0x194F | ~23b | Between scan bitmap and VFO A |
 | 0x1970-0x1BFF | ~656b | After VFO B |
 | 0x1F2B-0x1F3F | 21b | After menu color |

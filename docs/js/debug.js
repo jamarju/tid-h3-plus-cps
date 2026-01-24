@@ -53,6 +53,7 @@ const Debug = {
         { start: 0x0CA3, end: 0x0CA3, description: 'Flags: bit2=DualWatch[10], bit4=DispB[18], bit6-7=PONMGS[14]' },
         { start: 0x0CA4, end: 0x0CA4, description: 'VFO A current channel' },
         { start: 0x0CA5, end: 0x0CA5, description: 'VFO B current channel' },
+        { start: 0x0CA6, end: 0x0CA6, description: '⚠️ UNKNOWN - not sure what this does yet' },
         { start: 0x0CA7, end: 0x0CA7, description: 'Flags: bit0-2=VOXLevel[3] (0=off,1-5=level), bit3=STUN, bit4=KILL' },
         { start: 0x0CA8, end: 0x0CA8, description: 'Step Freq [2]: upper nibble (0-8)' },
         { start: 0x0CA9, end: 0x0CA9, description: 'Squelch Level [1]: 0=off, 1-9=level' },
@@ -81,6 +82,9 @@ const Debug = {
 
         // ANI/ID block (0x1820-0x182F)
         { start: 0x1820, end: 0x1822, description: 'ANI-Edit [16]: 3 digits (0-9 each)' },
+
+        // Channel valid bitmap (0x1900-0x1918)
+        { start: 0x1900, end: 0x1918, description: 'Channel Valid bitmap: 199 channels, 1 bit each (1=valid/can cycle to, 0=empty)', type: 'bitmap' },
 
         // Scan bitmap (0x1920-0x1938)
         { start: 0x1920, end: 0x1938, description: 'Scan bitmap: 199 channels, 1 bit each (1=on, 0=off)', type: 'bitmap' },

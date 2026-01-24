@@ -36,6 +36,7 @@ const BLE = {
     WRITE_RANGES_CHANNELS: [
         [0x0010, 0x0C80],  // 199 channels × 16 bytes
         [0x0D40, 0x1000],  // Channel names
+        [0x1900, 0x1920],  // Channel valid bitmap (controls which channels can be cycled to)
         [0x1920, 0x1940],  // Scan bitmap
     ],
 
@@ -887,6 +888,20 @@ const BLE = {
             this.encodeChannelName(buffer, nameOffset, data.channels[i].name);
         }
 
+        // Encode channel valid bitmap (0x1900+, 1 bit per channel, 1=valid/programmed, 0=empty)
+        // Radio only allows cycling to channels with bit=1 in this bitmap
+        const VALID_BITMAP_START = 0x1900;
+        for (let i = 0; i < data.channels.length; i++) {
+            const byteOffset = VALID_BITMAP_START + Math.floor(i / 8);
+            const bitMask = 1 << (i % 8);
+            // Channel is valid if it has RX frequency > 0
+            if (data.channels[i].rxFreq > 0) {
+                buffer[byteOffset] |= bitMask;   // Set bit (channel valid)
+            } else {
+                buffer[byteOffset] &= ~bitMask;  // Clear bit (channel empty)
+            }
+        }
+
         // Encode scan bitmap (0x1920+, 1 bit per channel, 1=on, 0=off)
         const SCAN_BITMAP_START = 0x1920;
         for (let i = 0; i < data.channels.length; i++) {
@@ -899,7 +914,9 @@ const BLE = {
             }
         }
 
-        // Debug: show scan bitmap for first 8 channels
+        // Debug: show bitmaps for first 8 channels
+        console.log('Valid bitmap byte 0x1900:', buffer[0x1900].toString(2).padStart(8, '0'),
+            '(CH1-8 valid:', data.channels.slice(0, 8).map(c => c.rxFreq > 0 ? '1' : '0').join(''), ')');
         console.log('Scan bitmap byte 0x1920:', buffer[0x1920].toString(2).padStart(8, '0'),
             '(CH1-8 scan:', data.channels.slice(0, 8).map(c => c.scanAdd ? '1' : '0').join(''), ')');
 
