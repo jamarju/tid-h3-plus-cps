@@ -47,13 +47,13 @@ const Debug = {
         { start: 0x0C9D, end: 0x0C9D, description: 'Brightness [13]: INVERTED (display = 5 - value)' },
 
         // Main settings packed bytes (0x0CA0-0x0CAF)
-        { start: 0x0CA0, end: 0x0CA0, description: 'Flags: bit1=DTMFST [19]' },
-        { start: 0x0CA1, end: 0x0CA1, description: 'Flags: bit0=Voice[11], bit2=Beep[7], bit4=KeyLock[9]' },
-        { start: 0x0CA2, end: 0x0CA2, description: 'Flags: bit2=DispA[17], bit3=FMInt[26], bit4-5=ToneBurst[24]' },
+        { start: 0x0CA0, end: 0x0CA0, description: 'Flags: bit1=DTMFST[19], bit6=DispLCD(RX), bit7=DispLCD(TX)' },
+        { start: 0x0CA1, end: 0x0CA1, description: 'Flags: bit0=Voice[11], bit2=Beep[7], bit4=KeyLock[9], bit6-7=ScanMode (0=TO,1=CO,2=SE)' },
+        { start: 0x0CA2, end: 0x0CA2, description: 'Flags: bit2=DispA[17], bit3=FMInt[26], bit4-5=ToneBurst[24], bit7=FMMode (0=VFO,1=CH)' },
         { start: 0x0CA3, end: 0x0CA3, description: 'Flags: bit2=DualWatch[10], bit4=DispB[18], bit6-7=PONMGS[14]' },
         { start: 0x0CA4, end: 0x0CA4, description: 'VFO A current channel' },
         { start: 0x0CA5, end: 0x0CA5, description: 'VFO B current channel' },
-        { start: 0x0CA7, end: 0x0CA7, description: 'VOX Level [3]: 0=off, 1-5=level' },
+        { start: 0x0CA7, end: 0x0CA7, description: 'Flags: bit0-2=VOXLevel[3] (0=off,1-5=level), bit3=STUN, bit4=KILL' },
         { start: 0x0CA8, end: 0x0CA8, description: 'Step Freq [2]: upper nibble (0-8)' },
         { start: 0x0CA9, end: 0x0CA9, description: 'Squelch Level [1]: 0=off, 1-9=level' },
         { start: 0x0CAA, end: 0x0CAA, description: 'TOT [5]: 0=off, 1=30s ... 7=210s' },
@@ -61,7 +61,15 @@ const Debug = {
         { start: 0x0CAC, end: 0x0CAC, description: 'Power Save [8]: 0=off, 1-4=level' },
         { start: 0x0CAD, end: 0x0CAD, description: 'Backlight [12]: 0=always, 1=5s ... 4=30s' },
         { start: 0x0CAE, end: 0x0CAE, description: 'VOX Delay [4]: 0=1s, 1=2s, 2=3s' },
-        { start: 0x0CAF, end: 0x0CAF, description: 'Breath LED [32]: upper nibble (0=off, 1=5s ... 4=30s)' },
+        { start: 0x0CAF, end: 0x0CAF, description: 'Flags: bit1=AM_BAND, bit4-7=BreathLED[32] (0=off,1=5s,2=10s,3=15s,4=30s)' },
+
+        // FM Channels (0x0CD0-0x0D33): 25 channels × 4 bytes
+        ...Array.from({ length: 25 }, (_, i) => ({
+            start: 0x0CD0 + i * 4,
+            end: 0x0CD0 + i * 4 + 3,
+            description: `FM Channel ${i + 1} (4 bytes: 16-bit BCD freq in 0.1MHz + 2 padding)`,
+            type: 'channel'
+        })),
 
         // Channel names (0x0D40+): 199 names × 8 bytes
         ...Array.from({ length: 199 }, (_, i) => ({
@@ -77,16 +85,29 @@ const Debug = {
         // Scan bitmap (0x1920-0x1938)
         { start: 0x1920, end: 0x1938, description: 'Scan bitmap: 199 channels, 1 bit each (1=on, 0=off)', type: 'bitmap' },
 
+        // FM Scan bitmap (0x1940-0x1943)
+        { start: 0x1940, end: 0x1943, description: 'FM Scan bitmap: 25 FM channels, 1 bit each (1=on, 0=off)', type: 'bitmap' },
+
+        // VFO A/B frequencies (0x1950-0x196F)
+        { start: 0x1950, end: 0x195F, description: 'VFO A frequency (16 bytes, same structure as channels)', type: 'channel' },
+        { start: 0x1960, end: 0x196F, description: 'VFO B frequency (16 bytes, same structure as channels)', type: 'channel' },
+
+        // FM VFO frequency (0x1970-0x1971)
+        { start: 0x1970, end: 0x1971, description: 'FM VFO frequency (16-bit BCD in 0.1MHz units)' },
+
         // Startup messages (0x1C00-0x1C2F)
         { start: 0x1C00, end: 0x1C0F, description: 'Startup Message 1 (16 chars)', type: 'string' },
         { start: 0x1C10, end: 0x1C1F, description: 'Startup Message 2 (16 chars)', type: 'string' },
         { start: 0x1C20, end: 0x1C2F, description: 'Startup Message 3 (16 chars)', type: 'string' },
 
-        // Secondary settings (0x1F20-0x1F2A)
+        // Secondary settings (0x1F20-0x1F2F)
         { start: 0x1F20, end: 0x1F20, description: 'MIC Gain [33]: 0-9' },
         { start: 0x1F28, end: 0x1F28, description: 'Language [21]: 0=en, 1=cn, 2=tr, 3=ru, 4=de, 5=es, 6=it, 7=fr' },
         { start: 0x1F29, end: 0x1F29, description: 'Display [15]: 0=single, 1=dual, 2=classic' },
         { start: 0x1F2A, end: 0x1F2A, description: 'Menu Color [42]: 0-17' },
+        { start: 0x1F2B, end: 0x1F2C, description: 'Scan Freq Range Upper: 16-bit little-endian (MHz)' },
+        { start: 0x1F2D, end: 0x1F2D, description: 'Scan Freq Range Lower: 8-bit (MHz)' },
+        { start: 0x1F2F, end: 0x1F2F, description: 'Scan Hang Time: (seconds * 2) - 1, range 0.5s-10.0s' },
 
         // Extended settings (0x3000+)
         { start: 0x3004, end: 0x3004, description: 'Active VFO: 0=A, 1=B' },

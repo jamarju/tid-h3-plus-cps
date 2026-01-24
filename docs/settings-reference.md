@@ -78,6 +78,8 @@ This document maps ALL 42 radio menu settings to their options and current value
 | TOT [5] | 0xCAA | 0=off, 1=30s, 2=60s, 3=90s, 4=120s, 5=150s, 6=180s, 7=210s |
 | Breath LED [32] | 0xCAF upper nibble | 0=off, 1=5s, 2=10s, 3=15s, 4=30s |
 | MIC Gain [33] | 0x1F20 | 0-9 |
+| OD PTT (BT submenu) | 0x1F25 | 0=Od, 1=Od+Analog |
+| Od mode (BT submenu) | 0x1F26 | 0=Local, 1=Forward, 2=Full |
 
 ---
 
@@ -173,3 +175,49 @@ These settings are not part of the main 1-42 menu system but are accessible thro
 | Scan Hang Time | 0x1F2F | 0.5s, 1.0s, 1.5s, ..., 9.5s, 10.0s | (seconds * 2) - 1 (values 0-19) |
 | Scan Freq Range Upper | 0x1F2B-0x1F2C | Numeric (MHz) | 16-bit little-endian |
 | Scan Freq Range Lower | 0x1F2D | Numeric (MHz) | 8-bit |
+
+### Bluetooth Settings (Submenu)
+
+**Current Values:**
+
+| Setting | Options | Current Value | Memory Location | Encoding |
+|---------|---------|---------------|-----------------|----------|
+| BL on/off | off, on | ON | NOT FOUND | Critical: OFF disables BLE connection |
+| BT mode | receiver, emitter | Receiver | NOT FOUND | Emitter mode may disconnect BLE |
+| BT name | (string) | TD-H3-Plus-559 | NOT FOUND | Read-only in menu, not in accessible memory |
+| BT pairing | (submenu action) | N/A | N/A | Not a stored setting |
+| **OD PTT** | Od, Od+Analog | Od | **0x1F25** ✓ | **0=Od, 1=Od+Analog** |
+| **Od mode** | Local, Forward, Full | Local | **0x1F26** ✓ | **0=Local, 1=Forward, 2=Full** |
+| BT Int mic | off, on | OFF | VOLATILE | **Resets to OFF on power cycle** |
+| BT Int spk | off, on | ON | VOLATILE | **Resets to ON on power cycle** |
+| BT mic gain | level 1-5 | 1 | VOLATILE | **Resets to level 1 on power cycle** |
+| BT spk gain | level 1-5 | 1 | VOLATILE | **Resets to level 1 on power cycle** |
+| BT pin code | (6 digits) | 000000 | NOT FOUND | Read-only in menu, not in accessible memory |
+
+**Note:** Settings marked VOLATILE are stored in RAM only and reset to defaults when radio is powered off. Only OD PTT and Od mode are persistent in flash memory.
+
+### Display Settings (Hidden)
+
+| Setting | Options | Memory Location | Encoding |
+|---------|---------|-----------------|----------|
+| **Disp LCD (TX)** | off, on | **0x0CA0 bit 7** ✓ | **0=off, 1=on** |
+| **Disp LCD (RX)** | off, on | **0x0CA0 bit 6** ✓ | **0=off, 1=on** |
+
+**Note:** These settings control whether the LCD display turns on during TX/RX. Only accessible via ODMaster app, not in radio menu.
+
+### STUN/KILL Settings (Hidden)
+
+| Setting | Options | Memory Location | Encoding |
+|---------|---------|-----------------|----------|
+| **STUN** | off, on | **0x0CA7 bit 3** ✓ | **0=off, 1=on** |
+| **KILL** | off, on | **0x0CA7 bit 4** ✓ | **0=off, 1=on** |
+
+**Note:** STUN remotely disables radio transmit/receive when activated. KILL is more severe and permanently disables the radio until revived. Both share the same byte with VOX Level (bits 0-2).
+
+### AM Band Settings (Hidden)
+
+| Setting | Options | Memory Location | Encoding |
+|---------|---------|-----------------|----------|
+| **AM BAND** | off, on | **0x0CAF bit 1** ✓ | **0=off, 1=on** |
+
+**Note:** Enables AM band reception. Shares the same byte with Breath LED (bits 4-7).

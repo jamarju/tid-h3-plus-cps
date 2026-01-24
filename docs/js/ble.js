@@ -39,6 +39,12 @@ const BLE = {
         [0x1920, 0x1940],  // Scan bitmap
     ],
 
+    WRITE_RANGES_FM: [
+        [0x0CA0, 0x0CB0],  // FM mode flag at 0xCA2 bit 7
+        [0x0CD0, 0x0D40],  // 25 FM channels × 4 bytes
+        [0x1940, 0x1980],  // FM scan bitmap + FM VFO frequency
+    ],
+
     // State
     device: null,
     server: null,
@@ -327,6 +333,10 @@ const BLE = {
                 writeRanges = this.WRITE_RANGES_CHANNELS;
                 console.log('Write mode: Channels only');
                 break;
+            case 'fm':
+                writeRanges = this.WRITE_RANGES_FM;
+                console.log('Write mode: FM Radio only');
+                break;
             default:
                 writeRanges = this.WRITE_RANGES_ALL;
                 console.log('Write mode: All');
@@ -602,7 +612,9 @@ const BLE = {
         const flags0xCA1 = data[0xCA1] || 0;
         const flags0xCA2 = data[0xCA2] || 0;
         const flags0xCA3 = data[0xCA3] || 0;
+        const flags0xCA7 = data[0xCA7] || 0;
         const flags0xCAB = data[0xCAB] || 0;
+        const flags0xCAF = data[0xCAF] || 0;
         const flags0x300A = data[0x300A] || 0;
 
         return {
@@ -612,8 +624,8 @@ const BLE = {
             // [2] Step Freq - 0xCA8 upper nibble: 0=2.5K,1=5K,2=6.25K,3=10K,4=12.5K,5=25K,6=50K,7=0.5K,8=8.33K
             stepFreq: (data[0xCA8] >> 4) & 0x0F,
 
-            // [3] VOX Level - 0xCA7: 0=off, 1-5=level
-            voxGain: data[0xCA7] || 0,
+            // [3] VOX Level - 0xCA7 bits 0-2: 0=off, 1-5=level
+            voxGain: flags0xCA7 & 0x07,
 
             // [4] VOX Delay - 0xCAE: 0=1.0s, 1=2.0s, 2=3.0s
             voxDelay: data[0xCAE] || 0,
@@ -734,6 +746,31 @@ const BLE = {
             msg2: this.parseString(data, 0x1C10, 16),
             msg3: this.parseString(data, 0x1C20, 16),
 
+            // Scan Settings (non-menu)
+            scanMode: (flags0xCA1 >> 6) & 0x03,  // 0x0CA1 bits 6-7: 0=TO, 1=CO, 2=SE
+            scanHangTime: data[0x1F2F] || 0,     // 0x1F2F: (seconds * 2) - 1, range 0-19
+            scanFreqLower: data[0x1F2D] || 0,    // 0x1F2D: 8-bit MHz
+            scanFreqUpper: (data[0x1F2B] || 0) | ((data[0x1F2C] || 0) << 8),  // 0x1F2B-0x1F2C: 16-bit LE MHz
+
+            // VFO Frequencies (0x1950-0x195F, 0x1960-0x196F)
+            vfoARxFreq: this.decodeBCDFrequency(data, 0x1950),
+            vfoATxFreq: this.decodeBCDFrequency(data, 0x1954),
+            vfoBRxFreq: this.decodeBCDFrequency(data, 0x1960),
+            vfoBTxFreq: this.decodeBCDFrequency(data, 0x1964),
+
+            // FM Radio Settings
+            fmMode: (flags0xCA2 >> 7) & 0x01,    // 0x0CA2 bit 7: 0=VFO, 1=Channel
+            fmVfoFreq: this.decodeBCDFMFrequency(data, 0x1970),  // 0x1970-0x1971: 16-bit BCD in 0.1MHz
+            fmChannels: this.parseFMChannels(data),  // 0x0CD0-0x0D33: 25 channels × 4 bytes
+            fmScanBitmap: this.parseFMScanBitmap(data),  // 0x1940-0x1943: 4 bytes
+
+            // Security Settings
+            stun: !!(flags0xCA7 & 0x08),         // 0x0CA7 bit 3: STUN
+            kill: !!(flags0xCA7 & 0x10),         // 0x0CA7 bit 4: KILL
+
+            // AM Band
+            amBand: !!(flags0xCAF & 0x02),       // 0x0CAF bit 1: AM BAND
+
             // Legacy/unused fields (kept for compatibility)
             scanRev: 0,
             priorityTx: 0,
@@ -741,9 +778,7 @@ const BLE = {
             dispLcdRx: true,
             bl: true,
             sync: false,
-            rpSte: 0,
-            stun: false,
-            kill: false
+            rpSte: 0
         };
     },
 
@@ -762,6 +797,69 @@ const BLE = {
             str += String.fromCharCode(b);
         }
         return str;
+    },
+
+    /**
+     * Decode FM frequency from 2 bytes (16-bit BCD in 0.1 MHz units)
+     * @param {Uint8Array} data - Raw memory
+     * @param {number} offset - Byte offset
+     * @returns {number} Frequency in MHz (e.g., 90.5)
+     */
+    decodeBCDFMFrequency(data, offset) {
+        // Read 2 bytes as little-endian BCD
+        const lowByte = data[offset] || 0;
+        const highByte = data[offset + 1] || 0;
+
+        // Extract BCD digits
+        const d0 = lowByte & 0x0F;
+        const d1 = (lowByte >> 4) & 0x0F;
+        const d2 = highByte & 0x0F;
+        const d3 = (highByte >> 4) & 0x0F;
+
+        // Combine into value (in 0.1 MHz units)
+        const tenths = d0 + d1 * 10 + d2 * 100 + d3 * 1000;
+
+        // Convert to MHz
+        return tenths / 10;
+    },
+
+    /**
+     * Parse FM channels (25 channels × 4 bytes at 0x0CD0-0x0D33)
+     * @param {Uint8Array} data - Raw memory
+     * @returns {Array} Array of 25 FM frequencies in MHz (0 = empty)
+     */
+    parseFMChannels(data) {
+        const channels = [];
+        const FM_START = 0x0CD0;
+        const FM_COUNT = 25;
+
+        for (let i = 0; i < FM_COUNT; i++) {
+            const offset = FM_START + i * 4;
+            const freq = this.decodeBCDFMFrequency(data, offset);
+            // Check if empty (0xFF padding)
+            const isEmpty = data[offset] === 0xFF || freq === 0 || freq < 87 || freq > 109;
+            channels.push(isEmpty ? 0 : freq);
+        }
+
+        return channels;
+    },
+
+    /**
+     * Parse FM scan bitmap (4 bytes at 0x1940-0x1943, 1 bit per channel)
+     * @param {Uint8Array} data - Raw memory
+     * @returns {Array} Array of 25 booleans (true = channel has frequency assigned)
+     */
+    parseFMScanBitmap(data) {
+        const bitmap = [];
+        const BITMAP_START = 0x1940;
+
+        for (let i = 0; i < 25; i++) {
+            const byteOffset = BITMAP_START + Math.floor(i / 8);
+            const bitMask = 1 << (i % 8);
+            bitmap.push(!!(data[byteOffset] & bitMask));
+        }
+
+        return bitmap;
     },
 
     /**
@@ -1030,18 +1128,20 @@ const BLE = {
         if (settings.dtmfSideTone) flags0xCA0 |= 0x02; else flags0xCA0 &= ~0x02;
         buffer[0xCA0] = flags0xCA0;
 
-        // 0xCA1: bit 0=Voice[11], bit 2=Keypad Beep[7], bit 4=Keypad Lock[9]
+        // 0xCA1: bit 0=Voice[11], bit 2=Keypad Beep[7], bit 4=Keypad Lock[9], bits 6-7=Scan Mode
         let flags0xCA1 = buffer[0xCA1] || 0;
         if (settings.voicePrompt) flags0xCA1 |= 0x01; else flags0xCA1 &= ~0x01;
         if (settings.beep) flags0xCA1 |= 0x04; else flags0xCA1 &= ~0x04;
         if (settings.autoLock) flags0xCA1 |= 0x10; else flags0xCA1 &= ~0x10;
+        flags0xCA1 = (flags0xCA1 & ~0xC0) | ((settings.scanMode || 0) << 6);
         buffer[0xCA1] = flags0xCA1;
 
-        // 0xCA2: bit 2=Display Type-A[17], bit 3=FM Interrupt[26], bits 4-5=Tone Burst[24]
+        // 0xCA2: bit 2=Display Type-A[17], bit 3=FM Interrupt[26], bits 4-5=Tone Burst[24], bit 7=FM Mode
         let flags0xCA2 = buffer[0xCA2] || 0;
         flags0xCA2 = (flags0xCA2 & ~0x04) | ((settings.aChannelDisp || 0) << 2);
         if (settings.fmInterrupt) flags0xCA2 |= 0x08; else flags0xCA2 &= ~0x08;
         flags0xCA2 = (flags0xCA2 & ~0x30) | ((settings.toneBurst || 0) << 4);
+        if (settings.fmMode) flags0xCA2 |= 0x80; else flags0xCA2 &= ~0x80;
         buffer[0xCA2] = flags0xCA2;
 
         // 0xCA3: bit 2=Dual Watch[10], bit 4=Display Type-B[18], bits 6-7=Power On Display[14]
@@ -1051,8 +1151,12 @@ const BLE = {
         flags0xCA3 = (flags0xCA3 & ~0xC0) | ((settings.ponmgs || 0) << 6);
         buffer[0xCA3] = flags0xCA3;
 
-        // 0xCA7: VOX Level [3]
-        buffer[0xCA7] = settings.voxGain || 0;
+        // 0xCA7: VOX Level [3] (bits 0-2), STUN (bit 3), KILL (bit 4)
+        let flags0xCA7 = buffer[0xCA7] || 0;
+        flags0xCA7 = (flags0xCA7 & ~0x07) | ((settings.voxGain || 0) & 0x07);  // Bits 0-2: VOX
+        if (settings.stun) flags0xCA7 |= 0x08; else flags0xCA7 &= ~0x08;       // Bit 3: STUN
+        if (settings.kill) flags0xCA7 |= 0x10; else flags0xCA7 &= ~0x10;       // Bit 4: KILL
+        buffer[0xCA7] = flags0xCA7;
 
         // 0xCA8: Step Freq [2] - upper nibble
         let val0xCA8 = buffer[0xCA8] || 0;
@@ -1082,9 +1186,10 @@ const BLE = {
         // 0xCAE: VOX Delay [4]
         buffer[0xCAE] = settings.voxDelay || 0;
 
-        // 0xCAF: upper nibble = Breath LED [32]
+        // 0xCAF: upper nibble = Breath LED [32], bit 1 = AM Band
         let flags0xCAF = buffer[0xCAF] || 0;
         flags0xCAF = (flags0xCAF & 0x0F) | ((settings.breathLed || 0) << 4);
+        if (settings.amBand) flags0xCAF |= 0x02; else flags0xCAF &= ~0x02;
         buffer[0xCAF] = flags0xCAF;
 
         // ===== 0x1820: ANI-Edit [16] =====
@@ -1110,6 +1215,35 @@ const BLE = {
 
         // 0x1F2A: Menu Color [42]
         buffer[0x1F2A] = settings.menuColor || 0;
+
+        // 0x1F2B-0x1F2C: Scan Freq Range Upper (16-bit LE, MHz)
+        const scanUpper = settings.scanFreqUpper || 0;
+        buffer[0x1F2B] = scanUpper & 0xFF;
+        buffer[0x1F2C] = (scanUpper >> 8) & 0xFF;
+
+        // 0x1F2D: Scan Freq Range Lower (8-bit, MHz)
+        buffer[0x1F2D] = settings.scanFreqLower || 0;
+
+        // 0x1F2F: Scan Hang Time ((seconds * 2) - 1, range 0-19)
+        buffer[0x1F2F] = settings.scanHangTime || 0;
+
+        // ===== VFO A/B Frequencies (0x1950-0x196F) =====
+        // VFO A RX/TX
+        this.encodeBCDFrequency(buffer, 0x1950, settings.vfoARxFreq || 0);
+        this.encodeBCDFrequency(buffer, 0x1954, settings.vfoATxFreq || 0);
+        // VFO B RX/TX
+        this.encodeBCDFrequency(buffer, 0x1960, settings.vfoBRxFreq || 0);
+        this.encodeBCDFrequency(buffer, 0x1964, settings.vfoBTxFreq || 0);
+
+        // ===== FM Radio Settings =====
+        // 0x1970-0x1971: FM VFO Frequency (16-bit BCD in 0.1MHz)
+        this.encodeBCDFMFrequency(buffer, 0x1970, settings.fmVfoFreq || 0);
+
+        // 0x0CD0-0x0D33: FM Channels (25 channels × 4 bytes)
+        this.encodeFMChannels(buffer, settings.fmChannels || []);
+
+        // 0x1940-0x1943: FM Scan Bitmap (4 bytes, 1 bit per channel)
+        this.encodeFMScanBitmap(buffer, settings.fmChannels || []);
 
         // ===== 0x3000 block: Extended settings =====
         // 0x300A: bit 7=STE[23], bits 4-5=Alarm Mode[22]
@@ -1138,6 +1272,82 @@ const BLE = {
         const bytes = new TextEncoder().encode(str.substring(0, maxLen));
         for (let i = 0; i < maxLen; i++) {
             buffer[offset + i] = i < bytes.length ? bytes[i] : 0;
+        }
+    },
+
+    /**
+     * Encode FM frequency as 16-bit BCD (in 0.1 MHz units)
+     * @param {Uint8Array} buffer - Target buffer
+     * @param {number} offset - Byte offset
+     * @param {number} freqMHz - Frequency in MHz (e.g., 90.5)
+     */
+    encodeBCDFMFrequency(buffer, offset, freqMHz) {
+        // Convert MHz to 0.1 MHz units (tenths)
+        const tenths = Math.round(freqMHz * 10);
+
+        // Encode as BCD
+        const d0 = tenths % 10;
+        const d1 = Math.floor(tenths / 10) % 10;
+        const d2 = Math.floor(tenths / 100) % 10;
+        const d3 = Math.floor(tenths / 1000) % 10;
+
+        buffer[offset] = (d1 << 4) | d0;
+        buffer[offset + 1] = (d3 << 4) | d2;
+    },
+
+    /**
+     * Encode FM channels to memory (25 channels × 4 bytes at 0x0CD0-0x0D33)
+     * @param {Uint8Array} buffer - Target buffer
+     * @param {Array} channels - Array of 25 FM frequencies in MHz (0 = empty)
+     */
+    encodeFMChannels(buffer, channels) {
+        const FM_START = 0x0CD0;
+        const FM_COUNT = 25;
+
+        for (let i = 0; i < FM_COUNT; i++) {
+            const offset = FM_START + i * 4;
+            const freq = channels[i] || 0;
+
+            if (freq === 0 || freq < 87 || freq > 109) {
+                // Empty channel - fill with 0xFF
+                buffer[offset] = 0xFF;
+                buffer[offset + 1] = 0xFF;
+                buffer[offset + 2] = 0x00;
+                buffer[offset + 3] = 0x00;
+            } else {
+                // Valid frequency - encode as BCD
+                this.encodeBCDFMFrequency(buffer, offset, freq);
+                buffer[offset + 2] = 0x00;  // Padding
+                buffer[offset + 3] = 0x00;
+            }
+        }
+    },
+
+    /**
+     * Encode FM scan bitmap to memory (4 bytes at 0x1940-0x1943)
+     * Note: Per user guidance, this bitmap indicates whether a channel has a frequency assigned,
+     * not a "scan" setting. We set bit=1 if frequency is populated, bit=0 if blank.
+     * @param {Uint8Array} buffer - Target buffer
+     * @param {Array} channels - Array of 25 FM frequencies (to determine if populated)
+     */
+    encodeFMScanBitmap(buffer, channels) {
+        const BITMAP_START = 0x1940;
+
+        // Clear the 4 bytes first
+        buffer[BITMAP_START] = 0;
+        buffer[BITMAP_START + 1] = 0;
+        buffer[BITMAP_START + 2] = 0;
+        buffer[BITMAP_START + 3] = 0;
+
+        for (let i = 0; i < 25; i++) {
+            const freq = channels[i] || 0;
+            const hasFreq = freq > 0 && freq >= 87 && freq <= 109;
+
+            if (hasFreq) {
+                const byteOffset = BITMAP_START + Math.floor(i / 8);
+                const bitMask = 1 << (i % 8);
+                buffer[byteOffset] |= bitMask;
+            }
         }
     },
 

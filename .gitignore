@@ -1,3 +1,19 @@
 # Claude Code session data
 .claude/*
 !.claude/commands/
+
+# Temporary files
+tmp/
+
+# Binary dumps and firmware
+dumps/
+firmware/
+odmaster/
+*.bin
+*.h3p
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/

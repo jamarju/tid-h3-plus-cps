@@ -23,6 +23,7 @@
                     <button data-mode="all">Write All</button>
                     <button data-mode="settings">Settings Only</button>
                     <button data-mode="channels">Channels Only</button>
+                    <button data-mode="fm">FM Radio Only</button>
                 </div>
             </div>
             <div class="separator"></div>
@@ -32,15 +33,16 @@
     </header>
 
     <nav class="tabs">
-        <button class="tab active" data-tab="channels">Channels</button>
-        <button class="tab" data-tab="settings">Settings</button>
+        <button class="tab active" data-tab="settings">Settings</button>
+        <button class="tab" data-tab="channels">Channels</button>
+        <button class="tab" data-tab="fmchannels">FM Channels</button>
         <button class="tab" data-tab="debug">Debug</button>
     </nav>
 
     <main class="main-content">
-        <section id="channelsPanel" class="panel active">
+        <section id="channelsPanel" class="panel">
             <div class="grid-toolbar">
-                <span class="grid-info">199 Channels | Arrow keys to navigate | Enter to edit | Ctrl+C/V copy/paste | Ctrl+1/2/3 switch tabs</span>
+                <span class="grid-info">199 Channels | Arrow keys to navigate | Enter to edit | Ctrl+C/V copy/paste | Ctrl+1/2/3/4 switch tabs</span>
             </div>
             <div class="grid-container disabled" id="gridContainer">
                 <div class="panel-disabled-message" id="gridDisabledMessage">Read from radio or load a file to edit channels</div>
@@ -68,7 +70,7 @@
             </div>
         </section>
 
-        <section id="settingsPanel" class="panel">
+        <section id="settingsPanel" class="panel active">
             <div class="settings-container disabled" id="settingsContainer">
                 <div class="panel-disabled-message" id="settingsDisabledMessage">Read from radio or load a file to edit settings</div>
                 <div class="settings-group">
@@ -322,6 +324,67 @@
                         <label for="tdr" title="Monitor both VFO-A and VFO-B channels, alternating between them to catch activity on either"><span class="setting-index">10</span> Dual Watch</label>
                         <input type="checkbox" id="tdr">
                     </div>
+                    <div class="setting-row">
+                        <label for="scanMode" title="Scan resume mode: TO=time-operated (waits fixed time), CO=carrier-operated (waits until signal drops), SE=search (stops on signal)">Scan Mode</label>
+                        <select id="scanMode">
+                            <option value="0">TO (Time Operated)</option>
+                            <option value="1">CO (Carrier Operated)</option>
+                            <option value="2">SE (Search)</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="scanHangTime" title="How long to stay on a channel after detecting activity before resuming scan (0.5s to 10.0s)">Scan Hang Time</label>
+                        <select id="scanHangTime">
+                            <option value="0">0.5s</option>
+                            <option value="1">1.0s</option>
+                            <option value="2">1.5s</option>
+                            <option value="3">2.0s</option>
+                            <option value="4">2.5s</option>
+                            <option value="5">3.0s</option>
+                            <option value="6">3.5s</option>
+                            <option value="7">4.0s</option>
+                            <option value="8">4.5s</option>
+                            <option value="9">5.0s</option>
+                            <option value="10">5.5s</option>
+                            <option value="11">6.0s</option>
+                            <option value="12">6.5s</option>
+                            <option value="13">7.0s</option>
+                            <option value="14">7.5s</option>
+                            <option value="15">8.0s</option>
+                            <option value="16">8.5s</option>
+                            <option value="17">9.0s</option>
+                            <option value="18">9.5s</option>
+                            <option value="19">10.0s</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="scanFreqLower" title="Lower frequency limit for scan range in MHz (0-255 MHz)">Scan Freq Lower (MHz)</label>
+                        <input type="number" id="scanFreqLower" min="0" max="255" class="text-input" placeholder="66">
+                    </div>
+                    <div class="setting-row">
+                        <label for="scanFreqUpper" title="Upper frequency limit for scan range in MHz (0-599 MHz)">Scan Freq Upper (MHz)</label>
+                        <input type="number" id="scanFreqUpper" min="0" max="599" class="text-input" placeholder="599">
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>VFO Frequencies</h3>
+                    <div class="setting-row">
+                        <label for="vfoARxFreq" title="VFO A receive frequency in MHz">VFO A RX Freq</label>
+                        <input type="text" id="vfoARxFreq" class="text-input" placeholder="446.00625">
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoATxFreq" title="VFO A transmit frequency in MHz">VFO A TX Freq</label>
+                        <input type="text" id="vfoATxFreq" class="text-input" placeholder="446.00625">
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoBRxFreq" title="VFO B receive frequency in MHz">VFO B RX Freq</label>
+                        <input type="text" id="vfoBRxFreq" class="text-input" placeholder="446.09375">
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoBTxFreq" title="VFO B transmit frequency in MHz">VFO B TX Freq</label>
+                        <input type="text" id="vfoBTxFreq" class="text-input" placeholder="446.09375">
+                    </div>
                 </div>
 
                 <div class="settings-group">
@@ -432,6 +495,42 @@
                             <option value="4">30s</option>
                         </select>
                     </div>
+                    <div class="setting-row">
+                        <label for="amBand" title="Enable AM band reception for commercial AM radio">AM Band</label>
+                        <input type="checkbox" id="amBand">
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>FM Broadcast Radio</h3>
+                    <div class="setting-row">
+                        <label for="fmMode" title="FM radio mode: VFO for direct frequency entry, Channel for preset channels">FM Mode</label>
+                        <select id="fmMode">
+                            <option value="0">VFO</option>
+                            <option value="1">Channel</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="fmVfoFreq" title="FM VFO frequency for direct tuning (88.0-108.0 MHz)">FM VFO Frequency (MHz)</label>
+                        <input type="text" id="fmVfoFreq" class="text-input" placeholder="90.5">
+                    </div>
+                </div>
+
+                <div class="settings-group security-group">
+                    <h3 style="color: #ff4444;">⚠ Security Settings</h3>
+                    <div class="setting-row">
+                        <p style="color: #ff8888; font-size: 0.9em; margin: 0 0 10px 0;">
+                            <strong>WARNING:</strong> STUN remotely disables TX/RX. KILL permanently disables the radio until revived. Use with caution!
+                        </p>
+                    </div>
+                    <div class="setting-row">
+                        <label for="stun" title="Enable remote STUN feature - allows disabling radio transmit/receive remotely via DTMF">STUN</label>
+                        <input type="checkbox" id="stun">
+                    </div>
+                    <div class="setting-row">
+                        <label for="kill" title="Enable remote KILL feature - permanently disables radio until revived via special DTMF code">KILL</label>
+                        <input type="checkbox" id="kill">
+                    </div>
                 </div>
 
                 <div class="settings-group">
@@ -460,9 +559,28 @@
             </div>
         </section>
 
+        <section id="fmchannelsPanel" class="panel">
+            <div class="grid-toolbar">
+                <span class="grid-info">25 FM Channels (88.0-108.0 MHz) | Ctrl+1/2/3/4 switch tabs</span>
+            </div>
+            <div class="fm-container disabled" id="fmContainer">
+                <div class="panel-disabled-message" id="fmDisabledMessage">Read from radio or load a file to edit FM channels</div>
+                <table class="channel-grid" id="fmGrid">
+                    <thead>
+                        <tr>
+                            <th class="col-ch">CH</th>
+                            <th class="col-fmfreq">Frequency (MHz)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fmBody">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <section id="debugPanel" class="panel">
             <div class="debug-toolbar">
-                <span class="debug-info">Memory Dump (16 KB) | <span class="legend-known">Known</span> <span class="legend-unknown">Unknown Data</span> <span class="legend-empty">Empty (0xFF)</span> | Ctrl+1/2/3 switch tabs</span>
+                <span class="debug-info">Memory Dump (16 KB) | <span class="legend-known">Known</span> <span class="legend-unknown">Unknown Data</span> <span class="legend-empty">Empty (0xFF)</span> | Ctrl+1/2/3/4 switch tabs</span>
             </div>
             <div class="debug-container disabled" id="debugContainer">
                 <div class="panel-disabled-message" id="debugDisabledMessage">Read from radio or load a file to view memory</div>
@@ -486,6 +604,7 @@
     <script src="js/ble.js"></script>
     <script src="js/grid.js"></script>
     <script src="js/settings.js"></script>
+    <script src="js/fm.js"></script>
     <script src="js/debug.js"></script>
     <script src="js/main.js"></script>
 </body>

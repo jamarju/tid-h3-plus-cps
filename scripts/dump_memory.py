@@ -81,7 +81,11 @@ class H3PlusDumper:
 
         # Step 4: Send mode 0x06
         await client.write_gatt_char(CHAR_WRITE_UUID, bytes([0x06]), response=False)
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(0.2)
+
+        # Clear any leftover responses from handshake
+        self.response_ready.clear()
+        self.last_response = None
 
         print("Handshake complete")
 
@@ -162,8 +166,9 @@ class H3PlusDumper:
                         break
 
                 chunk_count += 1
-                progress = chunk_count / total_chunks * 100
-                print(f"\rProgress: {progress:5.1f}% [{chunk_count}/{total_chunks} chunks, addr 0x{addr:04X}]", end="", flush=True)
+                print(".", end="", flush=True)
+                if chunk_count % 50 == 0:
+                    print(f" {chunk_count}/{total_chunks}", flush=True)
 
                 await asyncio.sleep(0.03)  # Small delay between reads
 

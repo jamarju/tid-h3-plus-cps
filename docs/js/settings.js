@@ -107,6 +107,10 @@ const Settings = {
         // Selects - Power Save
         this.setSelectValue('save', this.settings.save);
 
+        // Selects - Scan
+        this.setSelectValue('scanMode', this.settings.scanMode);
+        this.setSelectValue('scanHangTime', this.settings.scanHangTime);
+
         // Selects - Function Keys
         this.setSelectValue('shortKeyPf1', this.settings.shortKeyPf1);
         this.setSelectValue('longKeyPf1', this.settings.longKeyPf1);
@@ -144,6 +148,13 @@ const Settings = {
         // Checkboxes - Scan
         this.setCheckboxValue('tdr', this.settings.tdr);
 
+        // Checkboxes - AM Band
+        this.setCheckboxValue('amBand', this.settings.amBand);
+
+        // Checkboxes - Security
+        this.setCheckboxValue('stun', this.settings.stun);
+        this.setCheckboxValue('kill', this.settings.kill);
+
         // Checkboxes - Power Save
         this.setCheckboxValue('autoLock', this.settings.autoLock);
 
@@ -156,6 +167,16 @@ const Settings = {
         this.setTextValue('msg1', this.settings.msg1);
         this.setTextValue('msg2', this.settings.msg2);
         this.setTextValue('msg3', this.settings.msg3);
+
+        // Text inputs - Scan freq range
+        this.setTextValue('scanFreqLower', this.settings.scanFreqLower);
+        this.setTextValue('scanFreqUpper', this.settings.scanFreqUpper);
+
+        // Text inputs - VFO frequencies
+        this.setTextValue('vfoARxFreq', this.settings.vfoARxFreq ? this.settings.vfoARxFreq.toFixed(5) : '');
+        this.setTextValue('vfoATxFreq', this.settings.vfoATxFreq ? this.settings.vfoATxFreq.toFixed(5) : '');
+        this.setTextValue('vfoBRxFreq', this.settings.vfoBRxFreq ? this.settings.vfoBRxFreq.toFixed(5) : '');
+        this.setTextValue('vfoBTxFreq', this.settings.vfoBTxFreq ? this.settings.vfoBTxFreq.toFixed(5) : '');
     },
 
     /**
@@ -205,8 +226,17 @@ const Settings = {
             } else if (el.tagName === 'SELECT') {
                 const value = parseInt(el.value);
                 this.settings[id] = isNaN(value) ? el.value : value;
+            } else if (el.type === 'number') {
+                const value = parseInt(el.value);
+                this.settings[id] = isNaN(value) ? 0 : value;
             } else if (el.type === 'text') {
-                this.settings[id] = el.value;
+                // Check if it's a VFO frequency (looks like a frequency format)
+                if (id.includes('vfo') && id.includes('Freq')) {
+                    const freq = parseFloat(el.value);
+                    this.settings[id] = isNaN(freq) ? 0 : freq;
+                } else {
+                    this.settings[id] = el.value;
+                }
             }
         });
 

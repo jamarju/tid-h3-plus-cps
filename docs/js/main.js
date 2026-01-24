@@ -44,6 +44,8 @@ const App = {
             gridDisabledMessage: document.getElementById('gridDisabledMessage'),
             settingsContainer: document.getElementById('settingsContainer'),
             settingsDisabledMessage: document.getElementById('settingsDisabledMessage'),
+            fmContainer: document.getElementById('fmContainer'),
+            fmDisabledMessage: document.getElementById('fmDisabledMessage'),
             debugContainer: document.getElementById('debugContainer'),
             debugDisabledMessage: document.getElementById('debugDisabledMessage')
         };
@@ -110,10 +112,15 @@ const App = {
             });
         }
         // Empty settings
-        const settings = {};
+        const settings = {
+            fmChannels: new Array(25).fill(0),
+            fmVfoFreq: 0,
+            fmMode: 0
+        };
 
         Grid.init(channels);
         Settings.init(settings);
+        FMRadio.init(settings);
     },
 
     /**
@@ -184,6 +191,7 @@ const App = {
 
             Grid.update(data.channels);
             Settings.update(data.settings);
+            FMRadio.update(data.settings);
             Debug.render(memory);
 
             this.showProgress(false);
@@ -219,7 +227,7 @@ const App = {
                 return;
             }
 
-            const modeLabels = { all: 'all', settings: 'settings', channels: 'channels' };
+            const modeLabels = { all: 'all', settings: 'settings', channels: 'channels', fm: 'FM radio' };
             this.setStatus('Writing ' + modeLabels[mode] + '...');
             this.showProgress(true);
 
@@ -262,6 +270,7 @@ const App = {
 
             Grid.update(parsed.channels);
             Settings.update(parsed.settings);
+            FMRadio.update(parsed.settings);
             Debug.render(this.rawData);
 
             this.updateGridState();
@@ -341,16 +350,20 @@ const App = {
             this.handleLoad();
         }
 
-        // Ctrl+1/2/3 to switch tabs
+        // Ctrl+1/2/3/4 to switch tabs
         if (e.ctrlKey && e.key === '1') {
-            e.preventDefault();
-            this.switchTab('channels');
-        }
-        if (e.ctrlKey && e.key === '2') {
             e.preventDefault();
             this.switchTab('settings');
         }
+        if (e.ctrlKey && e.key === '2') {
+            e.preventDefault();
+            this.switchTab('channels');
+        }
         if (e.ctrlKey && e.key === '3') {
+            e.preventDefault();
+            this.switchTab('fmchannels');
+        }
+        if (e.ctrlKey && e.key === '4') {
             e.preventDefault();
             this.switchTab('debug');
         }
@@ -394,19 +407,22 @@ const App = {
         // Update Save button
         this.elements.btnSave.disabled = !hasData;
 
-        // Update all three panels
+        // Update all four panels
         this.elements.gridContainer.classList.toggle('disabled', isDisabled);
         this.elements.settingsContainer.classList.toggle('disabled', isDisabled);
+        this.elements.fmContainer.classList.toggle('disabled', isDisabled);
         this.elements.debugContainer.classList.toggle('disabled', isDisabled);
 
         // Update messages
         if (this.isReading) {
             this.elements.gridDisabledMessage.textContent = 'Reading from radio...';
             this.elements.settingsDisabledMessage.textContent = 'Reading from radio...';
+            this.elements.fmDisabledMessage.textContent = 'Reading from radio...';
             this.elements.debugDisabledMessage.textContent = 'Reading from radio...';
         } else if (!hasData) {
             this.elements.gridDisabledMessage.textContent = 'Read from radio or load a file to edit channels';
             this.elements.settingsDisabledMessage.textContent = 'Read from radio or load a file to edit settings';
+            this.elements.fmDisabledMessage.textContent = 'Read from radio or load a file to edit FM settings';
             this.elements.debugDisabledMessage.textContent = 'Read from radio or load a file to view memory';
         }
     }

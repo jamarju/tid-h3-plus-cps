@@ -1,6 +1,6 @@
 # Tidradio H3 Plus Memory Map
 
-**Last Updated:** January 23, 2026 (Session 10)
+**Last Updated:** January 24, 2026 (Session 14)
 **Total Memory:** 16KB (0x0000-0x3FFF), but radio reports 100% at ~8KB
 
 ---
@@ -15,11 +15,14 @@ Based on actual memory scan (non-0xFF bytes):
 | Function Keys | 0x0C90-0x0C9D | 14b | PF1/PF2, brightness | ✅ VERIFIED |
 | VFO State | 0x0CA4-0x0CA5 | 2b | Current A/B channels | ✅ VERIFIED |
 | Main Settings | 0x0CA0-0x0CAF | 16b | Core radio settings | ✅ VERIFIED |
+| **FM Channels** | 0x0CD0-0x0D33 | 100b | 25 FM channels × 4 bytes | ✅ VERIFIED |
 | Channel Names | 0x0D40+ | 8b/ch | 199 names × 8 bytes | ✅ VERIFIED |
 | ANI/ID Block | 0x1820-0x182F | 16b | ANI edit, IDs | ✅ VERIFIED |
 | **Scan Bitmap** | 0x1920-0x1938 | 25b | 199 channels, 1 bit each | ✅ VERIFIED |
+| **FM Scan Bitmap** | 0x1940-0x1943 | 4b | 25 FM channels, 1 bit each | ✅ VERIFIED |
 | **VFO A Frequency** | 0x1950-0x195F | 16b | RX/TX freq, tones, flags | ✅ VERIFIED |
 | **VFO B Frequency** | 0x1960-0x196F | 16b | RX/TX freq, tones, flags | ✅ VERIFIED |
+| **FM VFO Frequency** | 0x1970-0x1971 | 2b | FM VFO freq (BCD, 0.1 MHz units) | ✅ VERIFIED |
 | Startup Messages | 0x1C00-0x1C2F | 48b | 3 × 16-byte messages | ✅ VERIFIED |
 | Secondary Settings | 0x1F20-0x1F2F | 16b | MIC, language, display, color, scan settings | ✅ VERIFIED |
 | Extended Settings | 0x3000-0x300C | 13b | STE, Alarm, PTT Delay, etc | ✅ VERIFIED |
@@ -61,6 +64,8 @@ Based on actual memory scan (non-0xFF bytes):
 | Bit | Setting | Menu # | Values |
 |-----|---------|--------|--------|
 | 1 | DTMFST | [19] | 0=off, 1=on |
+| 6 | Disp LCD (RX) | - | 0=off, 1=on |
+| 7 | Disp LCD (TX) | - | 0=off, 1=on |
 
 ### 0x0CA1 - Flags B
 | Bit | Setting | Menu # | Values |
@@ -76,6 +81,7 @@ Based on actual memory scan (non-0xFF bytes):
 | 2 | Display Type-A | [17] | 0=freq+num, 1=name+num |
 | 3 | FM Interrupt | [26] | 0=off, 1=on |
 | 4-5 | Tone Burst | [24] | (data>>4)&0x03: 0=1000Hz, 1=1450Hz, 2=1750Hz, 3=2100Hz |
+| 7 | FM Mode | - | 0=VFO, 1=Channel |
 
 ### 0x0CA3 - Flags D
 | Bit | Setting | Menu # | Values |
@@ -90,7 +96,7 @@ Based on actual memory scan (non-0xFF bytes):
 
 | Offset | Setting | Menu # | Encoding |
 |--------|---------|--------|----------|
-| 0x0CA7 | VOX Level | [3] | 0=off, 1-5=level |
+| 0x0CA7 | VOX Level | [3] | Bits 0-2: 0=off, 1-5=level; Bit 3: STUN (0=off, 1=on); Bit 4: KILL (0=off, 1=on) |
 | 0x0CA8 | Step Freq | [2] | Upper nibble (val<<4): 0=2.5K,1=5K,2=6.25K,3=10K,4=12.5K,5=25K,6=50K,7=0.5K,8=8.33K |
 | 0x0CA9 | Squelch Level | [1] | 0=off, 1-9=level |
 | 0x0CAA | TOT | [5] | 0=off, 1=30s, 2=60s, 3=90s, 4=120s, 5=150s, 6=180s, 7=210s |
@@ -101,7 +107,7 @@ Based on actual memory scan (non-0xFF bytes):
 | 0x0CAC | Power Save | [8] | 0=off, 1-4=level |
 | 0x0CAD | Backlight | [12] | 0=always, 1=5s, 2=10s, 3=15s, 4=30s |
 | 0x0CAE | VOX Delay | [4] | 0=1.0s, 1=2.0s, 2=3.0s |
-| 0x0CAF | Breath LED | [32] | Upper nibble (data>>4)&0x0F: 0=off, 1=5s, 2=10s, 3=15s, 4=30s |
+| 0x0CAF | Breath LED | [32] | Bit 1: AM BAND (0=off, 1=on); Upper nibble (bits 4-7): 0=off, 1=5s, 2=10s, 3=15s, 4=30s |
 
 ---
 
@@ -146,6 +152,38 @@ Used when Power On Display [14] = "message"
 
 ---
 
+## FM Channels (0x0CD0-0x0D33) - VERIFIED
+
+**25 FM broadcast channels** for commercial FM radio reception (88-108 MHz).
+
+| Channel | Offset | Encoding |
+|---------|--------|----------|
+| FM CH1 | 0x0CD0-0x0CD3 | 16-bit BCD little-endian (0.1 MHz) + 2 padding bytes |
+| FM CH2 | 0x0CD4-0x0CD7 | Same format |
+| ... | ... | 4 bytes per channel |
+| FM CH25 | 0x0D30-0x0D33 | Same format |
+
+**Encoding examples:**
+- 88.0 MHz = 880 tenths → 0x0880 BCD → stored as `0x80 0x08 0x00 0x00`
+- 107.9 MHz = 1079 tenths → 0x1079 BCD → stored as `0x79 0x10 0x00 0x00`
+
+**Note:** ODMaster app has float parsing issues - always use explicit decimal (e.g., 88.0, not 88).
+
+---
+
+## FM Scan Bitmap (0x1940-0x1943) - VERIFIED
+
+**4 bytes** for 25 FM channels, 1 bit per channel (1=scan enabled, 0=scan disabled).
+
+| Offset | FM Channels | Encoding |
+|--------|-------------|----------|
+| 0x1940 | FM CH1-8 | Bit 0=CH1, Bit 7=CH8 |
+| 0x1941 | FM CH9-16 | Same pattern |
+| 0x1942 | FM CH17-24 | Same pattern |
+| 0x1943 | FM CH25 | Bit 0 only |
+
+---
+
 ## VFO Frequency Storage (0x1950, 0x1960) - VERIFIED
 
 VFO A and B frequencies are stored using the same 16-byte structure as channels:
@@ -158,6 +196,22 @@ VFO A and B frequencies are stored using the same 16-byte structure as channels:
 **Encoding:** Identical to channel data structure (see Channel Data section)
 
 **Note:** VFO frequencies use BCD little-endian encoding, same as channels. Names are NOT stored for VFOs.
+
+---
+
+## FM VFO Frequency (0x1970-0x1971) - VERIFIED
+
+**FM broadcast VFO** for direct frequency entry in FM radio mode.
+
+| Address | Description | Encoding |
+|---------|-------------|----------|
+| 0x1970-0x1971 | FM VFO Frequency | 16-bit BCD little-endian (0.1 MHz units) |
+
+**Encoding examples:**
+- 90.5 MHz = 905 tenths → 0x0905 BCD → stored as `0x05 0x09`
+- 107.9 MHz = 1079 tenths → 0x1079 BCD → stored as `0x79 0x10`
+
+**Related setting:** FM Mode (0x0CA2 bit 7): 0=VFO mode, 1=Channel mode
 
 ---
 
