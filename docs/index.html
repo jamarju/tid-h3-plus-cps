@@ -212,6 +212,38 @@
                         <input type="checkbox" id="ste">
                     </div>
                     <div class="setting-row">
+                        <label for="rpSte" title="Repeater Squelch Tail Elimination delay in seconds. Reduces squelch tail noise on repeater use.">STE Delay</label>
+                        <select id="rpSte">
+                            <option value="0">Off</option>
+                            <option value="1">1s</option>
+                            <option value="2">2s</option>
+                            <option value="3">3s</option>
+                            <option value="4">4s</option>
+                            <option value="5">5s</option>
+                            <option value="6">6s</option>
+                            <option value="7">7s</option>
+                            <option value="8">8s</option>
+                            <option value="9">9s</option>
+                            <option value="10">10s</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="rpToneDelay" title="Repeater tone delay in seconds. Delays transmission of repeater tone.">Repeater Tone Delay</label>
+                        <select id="rpToneDelay">
+                            <option value="0">Off</option>
+                            <option value="1">1s</option>
+                            <option value="2">2s</option>
+                            <option value="3">3s</option>
+                            <option value="4">4s</option>
+                            <option value="5">5s</option>
+                            <option value="6">6s</option>
+                            <option value="7">7s</option>
+                            <option value="8">8s</option>
+                            <option value="9">9s</option>
+                            <option value="10">10s</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
                         <label for="toneBurst" title="Selects tone frequency (1000Hz/1450Hz/1750Hz/2100Hz). To transmit this tone, assign PF1 or PF2 button to 'Tone' function."><span class="setting-index">24</span> Tone Burst</label>
                         <select id="toneBurst">
                             <option value="0">1000Hz</option>
@@ -368,7 +400,14 @@
                 </div>
 
                 <div class="settings-group">
-                    <h3>VFO Frequencies</h3>
+                    <h3>VFO Settings</h3>
+                    <div class="setting-row">
+                        <label for="activeVfo" title="Which VFO (A or B) is currently active">Active VFO</label>
+                        <select id="activeVfo">
+                            <option value="0">A</option>
+                            <option value="1">B</option>
+                        </select>
+                    </div>
                     <div class="setting-row">
                         <label for="vfoARxFreq" title="VFO A receive frequency in MHz">VFO A RX Freq</label>
                         <input type="text" id="vfoARxFreq" class="text-input" placeholder="446.00625">
@@ -378,12 +417,20 @@
                         <input type="text" id="vfoATxFreq" class="text-input" placeholder="446.00625">
                     </div>
                     <div class="setting-row">
+                        <label for="vfoAOffset" title="VFO A frequency offset in MHz (used with repeater offset direction +/-)">VFO A Offset</label>
+                        <input type="text" id="vfoAOffset" class="text-input" placeholder="5.00000">
+                    </div>
+                    <div class="setting-row">
                         <label for="vfoBRxFreq" title="VFO B receive frequency in MHz">VFO B RX Freq</label>
                         <input type="text" id="vfoBRxFreq" class="text-input" placeholder="446.09375">
                     </div>
                     <div class="setting-row">
-                        <label for="vfoBTxFreq" title="VFO B transmit frequency in MHz">VFO B TX Freq</label>
+                        <label for="vfoBTxFreq" title="VFO B transmit frequency in MHz (Note: may not be used by radio)">VFO B TX Freq</label>
                         <input type="text" id="vfoBTxFreq" class="text-input" placeholder="446.09375">
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoBOffset" title="VFO B frequency offset in MHz (used with repeater offset direction +/-)">VFO B Offset</label>
+                        <input type="text" id="vfoBOffset" class="text-input" placeholder="5.00000">
                     </div>
                 </div>
 
@@ -481,6 +528,90 @@
                             <option value="3">BOTH</option>
                         </select>
                     </div>
+
+                    <h4 style="margin-top: 20px; margin-bottom: 10px; color: #666;">PTT ID Sequences</h4>
+                    <div class="setting-row">
+                        <label for="dtmfBotCode" title="DTMF sequence transmitted at start of transmission (BOT) when PTT ID is enabled. Up to 15 digits: 0-9, A-D, *, #">Start Code (BOT)</label>
+                        <input type="text" id="dtmfBotCode" maxlength="15" class="text-input" pattern="[0-9A-D*#]{0,15}" placeholder="*123#">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dtmfEotCode" title="DTMF sequence transmitted at end of transmission (EOT) when PTT ID is enabled. Up to 15 digits: 0-9, A-D, *, #">End Code (EOT)</label>
+                        <input type="text" id="dtmfEotCode" maxlength="15" class="text-input" pattern="[0-9A-D*#]{0,15}" placeholder="#123*">
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>DTMF Group Calling</h3>
+                    <div class="setting-row">
+                        <label for="dtmfGroupCode" title="Select which group call code to activate, or special keys like *, #, A-D">Group Code Selector</label>
+                        <select id="dtmfGroupCode">
+                            <option value="0x00">Off</option>
+                            <option value="0xFF">Disabled</option>
+                            <option value="0x0E">*</option>
+                            <option value="0x0F">#</option>
+                            <option value="0x0A">A</option>
+                            <option value="0x0B">B</option>
+                            <option value="0x0C">C</option>
+                            <option value="0x0D">D</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="dtmfGroup1" title="Group 1 DTMF calling code. Up to 15 digits: 0-9, A-D, *, #">Group 1</label>
+                        <input type="text" id="dtmfGroup1" maxlength="15" class="text-input" pattern="[0-9A-D*#]{0,15}" placeholder="">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dtmfGroup2" title="Group 2 DTMF calling code">Group 2</label>
+                        <input type="text" id="dtmfGroup2" maxlength="15" class="text-input" pattern="[0-9A-D*#]{0,15}" placeholder="">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dtmfGroup3" title="Group 3 DTMF calling code">Group 3</label>
+                        <input type="text" id="dtmfGroup3" maxlength="15" class="text-input" pattern="[0-9A-D*#]{0,15}" placeholder="">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dtmfGroup4" title="Group 4 DTMF calling code">Group 4</label>
+                        <input type="text" id="dtmfGroup4" maxlength="15" class="text-input" pattern="[0-9A-D*#]{0,15}" placeholder="">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dtmfGroup5" title="Group 5 DTMF calling code">Group 5</label>
+                        <input type="text" id="dtmfGroup5" maxlength="15" class="text-input" pattern="[0-9A-D*#]{0,15}" placeholder="">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dtmfGroup6" title="Group 6 DTMF calling code">Group 6</label>
+                        <input type="text" id="dtmfGroup6" maxlength="15" class="text-input" pattern="[0-9A-D*#]{0,15}" placeholder="">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dtmfGroup7" title="Group 7 DTMF calling code">Group 7</label>
+                        <input type="text" id="dtmfGroup7" maxlength="15" class="text-input" pattern="[0-9A-D*#]{0,15}" placeholder="">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dtmfGroup8" title="Group 8 DTMF calling code">Group 8</label>
+                        <input type="text" id="dtmfGroup8" maxlength="15" class="text-input" pattern="[0-9A-D*#]{0,15}" placeholder="">
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>TX Band Limits</h3>
+                    <div class="setting-row">
+                        <p style="color: #888; font-size: 0.9em; margin: 0 0 10px 0;">
+                            Limits vary by radio mode. NORMAL: VHF 136-174, UHF 200-600. HAM: VHF 144-148, UHF 420-450.
+                        </p>
+                    </div>
+                    <div class="setting-row">
+                        <label for="txVhfLow" title="VHF transmit band lower limit in MHz">VHF Low</label>
+                        <input type="text" id="txVhfLow" class="text-input" placeholder="136.0">
+                    </div>
+                    <div class="setting-row">
+                        <label for="txVhfHigh" title="VHF transmit band upper limit in MHz">VHF High</label>
+                        <input type="text" id="txVhfHigh" class="text-input" placeholder="174.0">
+                    </div>
+                    <div class="setting-row">
+                        <label for="txUhfLow" title="UHF transmit band lower limit in MHz">UHF Low</label>
+                        <input type="text" id="txUhfLow" class="text-input" placeholder="400.0">
+                    </div>
+                    <div class="setting-row">
+                        <label for="txUhfHigh" title="UHF transmit band upper limit in MHz">UHF High</label>
+                        <input type="text" id="txUhfHigh" class="text-input" placeholder="520.0">
+                    </div>
                 </div>
 
                 <div class="settings-group">
@@ -524,12 +655,20 @@
                         </p>
                     </div>
                     <div class="setting-row">
-                        <label for="stun" title="Enable remote STUN feature - allows disabling radio transmit/receive remotely via DTMF">STUN</label>
+                        <label for="stun" title="Enable remote STUN feature - allows disabling radio transmit/receive remotely via DTMF">STUN Enable</label>
                         <input type="checkbox" id="stun">
                     </div>
                     <div class="setting-row">
-                        <label for="kill" title="Enable remote KILL feature - permanently disables radio until revived via special DTMF code">KILL</label>
+                        <label for="dtmfStunCode" title="DTMF code to remotely disable this radio's transmit/receive. Up to 15 digits: 0-9, A-D, *, #">STUN Code</label>
+                        <input type="text" id="dtmfStunCode" maxlength="15" class="text-input" pattern="[0-9A-D*#]{0,15}" placeholder="">
+                    </div>
+                    <div class="setting-row">
+                        <label for="kill" title="Enable remote KILL feature - permanently disables radio until revived via special DTMF code">KILL Enable</label>
                         <input type="checkbox" id="kill">
+                    </div>
+                    <div class="setting-row">
+                        <label for="dtmfKillCode" title="DTMF code to permanently disable this radio until revived. Up to 15 digits. USE WITH CAUTION!">KILL Code</label>
+                        <input type="text" id="dtmfKillCode" maxlength="15" class="text-input" pattern="[0-9A-D*#]{0,15}" placeholder="">
                     </div>
                 </div>
 

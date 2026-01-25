@@ -10,6 +10,7 @@ tmp/
 
 # Binary dumps and firmware
 dumps/
+!dumps/manifest.txt
 firmware/
 odmaster/
 *.bin

@@ -47,10 +47,10 @@ const Debug = {
         { start: 0x0C9D, end: 0x0C9D, description: 'Brightness [13]: INVERTED (display = 5 - value)' },
 
         // Main settings packed bytes (0x0CA0-0x0CAF)
-        { start: 0x0CA0, end: 0x0CA0, description: 'Flags: bit1=DTMFST[19], bit6=DispLCD(RX), bit7=DispLCD(TX)' },
+        { start: 0x0CA0, end: 0x0CA0, description: 'Flags: bit1=DTMFST[19], bit4=Unknown (Win CPS flips NORMAL→HAM), bit6=DispLCD(RX), bit7=DispLCD(TX)' },
         { start: 0x0CA1, end: 0x0CA1, description: 'Flags: bit0=Voice[11], bit2=Beep[7], bit4=KeyLock[9], bit6-7=ScanMode (0=TO,1=CO,2=SE)' },
         { start: 0x0CA2, end: 0x0CA2, description: 'Flags: bit2=DispA[17], bit3=FMInt[26], bit4-5=ToneBurst[24], bit7=FMMode (0=VFO,1=CH)' },
-        { start: 0x0CA3, end: 0x0CA3, description: 'Flags: bit2=DualWatch[10], bit4=DispB[18], bit6-7=PONMGS[14]' },
+        { start: 0x0CA3, end: 0x0CA3, description: 'Flags: bit2=DualWatch[10], bit4=DispB[18], bit6-7=PONMGS[14] (0=voltage,1=msg,2=pic)' },
         { start: 0x0CA4, end: 0x0CA4, description: 'VFO A current channel' },
         { start: 0x0CA5, end: 0x0CA5, description: 'VFO B current channel' },
         { start: 0x0CA7, end: 0x0CA7, description: 'Flags: bit0-2=VOXLevel[3] (0=off,1-5=level), bit3=STUN, bit4=KILL' },
@@ -62,6 +62,16 @@ const Debug = {
         { start: 0x0CAD, end: 0x0CAD, description: 'Backlight [12]: 0=always, 1=5s ... 4=30s' },
         { start: 0x0CAE, end: 0x0CAE, description: 'VOX Delay [4]: 0=1s, 1=2s, 2=3s' },
         { start: 0x0CAF, end: 0x0CAF, description: 'Flags: bit1=AM_BAND, bit4-7=BreathLED[32] (0=off,1=5s,2=10s,3=15s,4=30s)' },
+
+        // VFO Offset Frequencies (0x0CB0-0x0CB7) - discovered from CHIRP
+        { start: 0x0CB0, end: 0x0CB3, description: 'VFO A Offset Frequency: 4-byte BCD little-endian (10Hz units)' },
+        { start: 0x0CB4, end: 0x0CB7, description: 'VFO B Offset Frequency: 4-byte BCD little-endian (10Hz units)' },
+
+        // TX Frequency Band Limits (0x0CC0-0x0CC7) - Windows CPS source - BCD BIG-ENDIAN!
+        { start: 0x0CC0, end: 0x0CC1, description: 'TX VHF Low: 16-bit BCD BE, 0.1MHz (NORMAL=1360→136.0, HAM=1440→144.0)' },
+        { start: 0x0CC2, end: 0x0CC3, description: 'TX VHF High: 16-bit BCD BE, 0.1MHz (NORMAL=1740→174.0, HAM=1480→148.0)' },
+        { start: 0x0CC4, end: 0x0CC5, description: 'TX UHF Low: 16-bit BCD BE, 0.1MHz (NORMAL=2000→200.0, HAM=4200→420.0)' },
+        { start: 0x0CC6, end: 0x0CC7, description: 'TX UHF High: 16-bit BCD BE, 0.1MHz (NORMAL=6000→600.0, HAM=4500→450.0)' },
 
         // FM Channels (0x0CD0-0x0D33): 25 channels × 4 bytes
         ...Array.from({ length: 25 }, (_, i) => ({
@@ -79,8 +89,21 @@ const Debug = {
             type: 'name'
         })),
 
-        // ANI/ID block (0x1820-0x182F)
-        { start: 0x1820, end: 0x1822, description: 'ANI-Edit [16]: 3 digits (0-9 each)' },
+        // DTMF/ANI System (discovered from CHIRP - chirpmyradio.com/issues/11968)
+        { start: 0x1800, end: 0x180F, description: 'DTMF Stun Code: 15 digits + length byte (H3/H3-Plus only)', type: 'dtmf' },
+        { start: 0x1810, end: 0x181F, description: 'DTMF Kill Code: 15 digits + length byte (H3/H3-Plus only)', type: 'dtmf' },
+        { start: 0x1820, end: 0x1822, description: 'ANI-Edit [16]: 3 DTMF digits (0x00-0x0F each, no length byte)' },
+        { start: 0x1829, end: 0x1829, description: 'DTMF Group Code Selector: 0x00="", 0xFF=Off, 0x0A-0x0D=A-D, 0x0E=*, 0x0F=#' },
+        { start: 0x1830, end: 0x183F, description: 'DTMF Group 1 Code: 15 digits + length byte', type: 'dtmf' },
+        { start: 0x1840, end: 0x184F, description: 'DTMF Group 2 Code: 15 digits + length byte', type: 'dtmf' },
+        { start: 0x1850, end: 0x185F, description: 'DTMF Group 3 Code: 15 digits + length byte', type: 'dtmf' },
+        { start: 0x1860, end: 0x186F, description: 'DTMF Group 4 Code: 15 digits + length byte', type: 'dtmf' },
+        { start: 0x1870, end: 0x187F, description: 'DTMF Group 5 Code: 15 digits + length byte', type: 'dtmf' },
+        { start: 0x1880, end: 0x188F, description: 'DTMF Group 6 Code: 15 digits + length byte', type: 'dtmf' },
+        { start: 0x1890, end: 0x189F, description: 'DTMF Group 7 Code: 15 digits + length byte', type: 'dtmf' },
+        { start: 0x18A0, end: 0x18AF, description: 'DTMF Group 8 Code: 15 digits + length byte', type: 'dtmf' },
+        { start: 0x18C0, end: 0x18CF, description: 'DTMF Start Code (BOT): PTT ID, 15 digits + length byte', type: 'dtmf' },
+        { start: 0x18D0, end: 0x18DF, description: 'DTMF End Code (EOT): PTT ID, 15 digits + length byte', type: 'dtmf' },
 
         // Channel valid bitmap (0x1900-0x1918)
         { start: 0x1900, end: 0x1918, description: 'Channel Valid bitmap: 199 channels, 1 bit each (1=valid/can cycle to, 0=empty)', type: 'bitmap' },
@@ -98,12 +121,19 @@ const Debug = {
         // FM VFO frequency (0x1970-0x1971)
         { start: 0x1970, end: 0x1971, description: 'FM VFO frequency (16-bit BCD in 0.1MHz units)' },
 
+        // Password (0x1B40-0x1B45) - discovered from Windows CPS
+        { start: 0x1B40, end: 0x1B45, description: 'Password: 6 ASCII chars, 0x00=no password. Max: 6 chars. Protocol unknown.', type: 'string' },
+
         // Startup messages (0x1C00-0x1C2F)
         { start: 0x1C00, end: 0x1C0F, description: 'Startup Message 1 (16 chars)', type: 'string' },
         { start: 0x1C10, end: 0x1C1F, description: 'Startup Message 2 (16 chars)', type: 'string' },
         { start: 0x1C20, end: 0x1C2F, description: 'Startup Message 3 (16 chars)', type: 'string' },
 
-        // Secondary settings (0x1F20-0x1F2F)
+        // Repeater Tail Settings (0x1F02-0x1F03) - discovered from CHIRP
+        { start: 0x1F02, end: 0x1F02, description: 'Repeater STE (Squelch Tail Elimination): 0=off, 1-10 (seconds)' },
+        { start: 0x1F03, end: 0x1F03, description: 'Repeater Tone Delay: 0=off, 1-10 (seconds)' },
+
+        // Secondary settings (0x1F20-0x1F30)
         { start: 0x1F20, end: 0x1F20, description: 'MIC Gain [33]: 0-9' },
         { start: 0x1F28, end: 0x1F28, description: 'Language [21]: 0=en, 1=cn, 2=tr, 3=ru, 4=de, 5=es, 6=it, 7=fr' },
         { start: 0x1F29, end: 0x1F29, description: 'Display [15]: 0=single, 1=dual, 2=classic' },
@@ -111,6 +141,37 @@ const Debug = {
         { start: 0x1F2B, end: 0x1F2C, description: 'Scan Freq Range Upper: 16-bit little-endian (MHz)' },
         { start: 0x1F2D, end: 0x1F2D, description: 'Scan Freq Range Lower: 8-bit (MHz)' },
         { start: 0x1F2F, end: 0x1F2F, description: 'Scan Hang Time: (seconds * 2) - 1, range 0.5s-10.0s' },
+        { start: 0x1F30, end: 0x1F30, description: 'Bluetooth? UNVERIFIED. CHIRP=bit7, dump=bit0, but toggle test failed. Need USB CPS on/off comparison.' },
+
+        // TX Power Tune Calibration (0x1F50-0x1F7F) - CHIRP source - FACTORY CALIBRATION, DO NOT MODIFY!
+        { start: 0x1F50, end: 0x1F50, description: 'Low Power Cal: 136-140 MHz (0-255)' },
+        { start: 0x1F51, end: 0x1F51, description: 'Low Power Cal: 140-150 MHz (0-255)' },
+        { start: 0x1F52, end: 0x1F52, description: 'Low Power Cal: 150-160 MHz (0-255)' },
+        { start: 0x1F53, end: 0x1F53, description: 'Low Power Cal: 160-170 MHz (0-255)' },
+        { start: 0x1F54, end: 0x1F54, description: 'Low Power Cal: 170+ MHz (0-255)' },
+        { start: 0x1F55, end: 0x1F55, description: 'Low Power Cal: 400-410 MHz (0-255)' },
+        { start: 0x1F56, end: 0x1F56, description: 'Low Power Cal: 410-420 MHz (0-255)' },
+        { start: 0x1F57, end: 0x1F57, description: 'Low Power Cal: 420-430 MHz (0-255)' },
+        { start: 0x1F58, end: 0x1F58, description: 'Low Power Cal: 430-440 MHz (0-255)' },
+        { start: 0x1F59, end: 0x1F59, description: 'Low Power Cal: 440-450 MHz (0-255)' },
+        { start: 0x1F5A, end: 0x1F5A, description: 'Low Power Cal: 450-460 MHz (0-255)' },
+        { start: 0x1F5B, end: 0x1F5B, description: 'Low Power Cal: 460-470 MHz (0-255)' },
+        { start: 0x1F5C, end: 0x1F5C, description: 'Low Power Cal: 470+ MHz (0-255)' },
+        { start: 0x1F5D, end: 0x1F5D, description: 'Low Power Cal: 245 MHz (0-255)' },
+        { start: 0x1F70, end: 0x1F70, description: 'High Power Cal: 136-140 MHz (0-255)' },
+        { start: 0x1F71, end: 0x1F71, description: 'High Power Cal: 140-150 MHz (0-255)' },
+        { start: 0x1F72, end: 0x1F72, description: 'High Power Cal: 150-160 MHz (0-255)' },
+        { start: 0x1F73, end: 0x1F73, description: 'High Power Cal: 160-170 MHz (0-255)' },
+        { start: 0x1F74, end: 0x1F74, description: 'High Power Cal: 170+ MHz (0-255)' },
+        { start: 0x1F75, end: 0x1F75, description: 'High Power Cal: 400-410 MHz (0-255)' },
+        { start: 0x1F76, end: 0x1F76, description: 'High Power Cal: 410-420 MHz (0-255)' },
+        { start: 0x1F77, end: 0x1F77, description: 'High Power Cal: 420-430 MHz (0-255)' },
+        { start: 0x1F78, end: 0x1F78, description: 'High Power Cal: 430-440 MHz (0-255)' },
+        { start: 0x1F79, end: 0x1F79, description: 'High Power Cal: 440-450 MHz (0-255)' },
+        { start: 0x1F7A, end: 0x1F7A, description: 'High Power Cal: 450-460 MHz (0-255)' },
+        { start: 0x1F7B, end: 0x1F7B, description: 'High Power Cal: 460-470 MHz (0-255)' },
+        { start: 0x1F7C, end: 0x1F7C, description: 'High Power Cal: 470+ MHz (0-255)' },
+        { start: 0x1F7D, end: 0x1F7D, description: 'High Power Cal: 245 MHz (0-255)' },
 
         // Extended settings (0x3000+)
         { start: 0x3004, end: 0x3004, description: 'Active VFO: 0=A, 1=B' },

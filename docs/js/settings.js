@@ -111,6 +111,10 @@ const Settings = {
         this.setSelectValue('scanMode', this.settings.scanMode);
         this.setSelectValue('scanHangTime', this.settings.scanHangTime);
 
+        // Selects - Repeater
+        this.setSelectValue('rpSte', this.settings.rpSte);
+        this.setSelectValue('rpToneDelay', this.settings.rpToneDelay);
+
         // Selects - Function Keys
         this.setSelectValue('shortKeyPf1', this.settings.shortKeyPf1);
         this.setSelectValue('longKeyPf1', this.settings.longKeyPf1);
@@ -172,11 +176,41 @@ const Settings = {
         this.setTextValue('scanFreqLower', this.settings.scanFreqLower);
         this.setTextValue('scanFreqUpper', this.settings.scanFreqUpper);
 
+        // VFO Settings
+        this.setSelectValue('activeVfo', this.settings.activeVfo);
+
         // Text inputs - VFO frequencies
         this.setTextValue('vfoARxFreq', this.settings.vfoARxFreq ? this.settings.vfoARxFreq.toFixed(5) : '');
         this.setTextValue('vfoATxFreq', this.settings.vfoATxFreq ? this.settings.vfoATxFreq.toFixed(5) : '');
+        this.setTextValue('vfoAOffset', this.settings.vfoAOffset ? this.settings.vfoAOffset.toFixed(5) : '');
         this.setTextValue('vfoBRxFreq', this.settings.vfoBRxFreq ? this.settings.vfoBRxFreq.toFixed(5) : '');
         this.setTextValue('vfoBTxFreq', this.settings.vfoBTxFreq ? this.settings.vfoBTxFreq.toFixed(5) : '');
+        this.setTextValue('vfoBOffset', this.settings.vfoBOffset ? this.settings.vfoBOffset.toFixed(5) : '');
+
+        // Text inputs - TX Band Limits
+        this.setTextValue('txVhfLow', this.settings.txVhfLow ? this.settings.txVhfLow.toFixed(1) : '');
+        this.setTextValue('txVhfHigh', this.settings.txVhfHigh ? this.settings.txVhfHigh.toFixed(1) : '');
+        this.setTextValue('txUhfLow', this.settings.txUhfLow ? this.settings.txUhfLow.toFixed(1) : '');
+        this.setTextValue('txUhfHigh', this.settings.txUhfHigh ? this.settings.txUhfHigh.toFixed(1) : '');
+
+        // DTMF - PTT ID Sequences
+        this.setTextValue('dtmfBotCode', this.settings.dtmfBotCode || '');
+        this.setTextValue('dtmfEotCode', this.settings.dtmfEotCode || '');
+
+        // DTMF - Group Calling
+        this.setSelectValue('dtmfGroupCode', this.settings.dtmfGroupCode !== undefined ? `0x${this.settings.dtmfGroupCode.toString(16).toUpperCase().padStart(2, '0')}` : '0x00');
+        this.setTextValue('dtmfGroup1', this.settings.dtmfGroup1 || '');
+        this.setTextValue('dtmfGroup2', this.settings.dtmfGroup2 || '');
+        this.setTextValue('dtmfGroup3', this.settings.dtmfGroup3 || '');
+        this.setTextValue('dtmfGroup4', this.settings.dtmfGroup4 || '');
+        this.setTextValue('dtmfGroup5', this.settings.dtmfGroup5 || '');
+        this.setTextValue('dtmfGroup6', this.settings.dtmfGroup6 || '');
+        this.setTextValue('dtmfGroup7', this.settings.dtmfGroup7 || '');
+        this.setTextValue('dtmfGroup8', this.settings.dtmfGroup8 || '');
+
+        // DTMF - Remote Control
+        this.setTextValue('dtmfStunCode', this.settings.dtmfStunCode || '');
+        this.setTextValue('dtmfKillCode', this.settings.dtmfKillCode || '');
     },
 
     /**
@@ -224,18 +258,28 @@ const Settings = {
             if (el.type === 'checkbox') {
                 this.settings[id] = el.checked;
             } else if (el.tagName === 'SELECT') {
-                const value = parseInt(el.value);
-                this.settings[id] = isNaN(value) ? el.value : value;
+                // Handle hex values (like dtmfGroupCode)
+                if (el.value.startsWith('0x')) {
+                    this.settings[id] = parseInt(el.value, 16);
+                } else {
+                    const value = parseInt(el.value);
+                    this.settings[id] = isNaN(value) ? el.value : value;
+                }
             } else if (el.type === 'number') {
                 const value = parseInt(el.value);
                 this.settings[id] = isNaN(value) ? 0 : value;
             } else if (el.type === 'text') {
-                // Check if it's a VFO frequency (looks like a frequency format)
-                if (id.includes('vfo') && id.includes('Freq')) {
+                // Check if it's a frequency field (VFO or TX band limits)
+                if ((id.includes('vfo') && (id.includes('Freq') || id.includes('Offset'))) || id.startsWith('tx')) {
                     const freq = parseFloat(el.value);
                     this.settings[id] = isNaN(freq) ? 0 : freq;
                 } else {
-                    this.settings[id] = el.value;
+                    // DTMF codes - uppercase and trim
+                    if (id.startsWith('dtmf')) {
+                        this.settings[id] = el.value.toUpperCase().trim();
+                    } else {
+                        this.settings[id] = el.value;
+                    }
                 }
             }
         });

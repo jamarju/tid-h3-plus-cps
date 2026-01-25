@@ -17,20 +17,20 @@ const BLE = {
     // Write ranges by mode
     WRITE_RANGES_ALL: [
         [0x0000, 0x13C0],  // Channels, names, settings
-        [0x1800, 0x18E0],  // Config area 1
-        [0x1900, 0x1980],  // Scan bitmap
+        [0x1800, 0x18E0],  // DTMF/ANI system
+        [0x1900, 0x1980],  // Channel valid + scan bitmaps + VFO frequencies
         [0x1C00, 0x1C40],  // Startup messages
-        [0x1F20, 0x1F40],  // Menu color, other settings
-        [0x3000, 0x3020],  // Extended: STE, PTT Delay, Alarm Mode, Talk Around
+        [0x1F00, 0x1F40],  // Repeater tail + secondary settings + bluetooth
+        [0x3000, 0x3020],  // Extended: active VFO, STE, alarm, PTT delay, talk around
     ],
 
     WRITE_RANGES_SETTINGS: [
         [0x0000, 0x0020],  // Header with modulation at 0x1F
-        [0x0C90, 0x0CB0],  // Function keys + main settings block
-        [0x1800, 0x18E0],  // Config area 1
+        [0x0C90, 0x0CD0],  // Function keys + main settings + VFO offsets + TX band limits
+        [0x1800, 0x18E0],  // DTMF/ANI system (stun, kill, groups, BOT/EOT)
         [0x1C00, 0x1C40],  // Startup messages
-        [0x1F20, 0x1F40],  // Menu color, secondary settings
-        [0x3000, 0x3020],  // Extended settings (STE, PTT Delay, etc.)
+        [0x1F00, 0x1F40],  // Repeater tail + secondary settings + bluetooth
+        [0x3000, 0x3020],  // Extended settings (active VFO, STE, alarm, PTT delay, talk around)
     ],
 
     WRITE_RANGES_CHANNELS: [
@@ -753,11 +753,28 @@ const BLE = {
             scanFreqLower: data[0x1F2D] || 0,    // 0x1F2D: 8-bit MHz
             scanFreqUpper: (data[0x1F2B] || 0) | ((data[0x1F2C] || 0) << 8),  // 0x1F2B-0x1F2C: 16-bit LE MHz
 
+            // VFO Settings
+            activeVfo: data[0x3004] || 0,            // 0x3004: 0=A, 1=B
+
             // VFO Frequencies (0x1950-0x195F, 0x1960-0x196F)
             vfoARxFreq: this.decodeBCDFrequency(data, 0x1950),
             vfoATxFreq: this.decodeBCDFrequency(data, 0x1954),
             vfoBRxFreq: this.decodeBCDFrequency(data, 0x1960),
             vfoBTxFreq: this.decodeBCDFrequency(data, 0x1964),
+
+            // VFO Offsets (0x0CB0-0x0CB7) - from CHIRP
+            vfoAOffset: this.decodeBCDFrequency(data, 0x0CB0),
+            vfoBOffset: this.decodeBCDFrequency(data, 0x0CB4),
+
+            // TX Band Limits (0x0CC0-0x0CC7) - Windows CPS source (BCD big-endian!)
+            txVhfLow: this.decodeBCDBigEndian(data, 0x0CC0),
+            txVhfHigh: this.decodeBCDBigEndian(data, 0x0CC2),
+            txUhfLow: this.decodeBCDBigEndian(data, 0x0CC4),
+            txUhfHigh: this.decodeBCDBigEndian(data, 0x0CC6),
+
+            // Repeater Tail Settings (0x1F02-0x1F03) - from CHIRP
+            rpSte: data[0x1F02] || 0,          // 0=off, 1-10 seconds
+            rpToneDelay: data[0x1F03] || 0,    // 0=off, 1-10 seconds
 
             // FM Radio Settings
             fmMode: (flags0xCA2 >> 7) & 0x01,    // 0x0CA2 bit 7: 0=VFO, 1=Channel
@@ -771,6 +788,21 @@ const BLE = {
 
             // AM Band
             amBand: !!(flags0xCAF & 0x02),       // 0x0CAF bit 1: AM BAND
+
+            // DTMF/ANI System (discovered from CHIRP driver - chirpmyradio.com/issues/11968)
+            dtmfStunCode: this.parseDTMF(data, 0x1800, 16),      // Stun Code (H3/H3-Plus only)
+            dtmfKillCode: this.parseDTMF(data, 0x1810, 16),      // Kill Code (H3/H3-Plus only)
+            dtmfGroupCode: data[0x1829] || 0,                     // Group Code Selector: 0x00="", 0xFF=Off, 0x0A-0x0D=A-D, 0x0E=*, 0x0F=#
+            dtmfGroup1: this.parseDTMF(data, 0x1830, 16),        // Group 1 call code
+            dtmfGroup2: this.parseDTMF(data, 0x1840, 16),        // Group 2 call code
+            dtmfGroup3: this.parseDTMF(data, 0x1850, 16),        // Group 3 call code
+            dtmfGroup4: this.parseDTMF(data, 0x1860, 16),        // Group 4 call code
+            dtmfGroup5: this.parseDTMF(data, 0x1870, 16),        // Group 5 call code
+            dtmfGroup6: this.parseDTMF(data, 0x1880, 16),        // Group 6 call code
+            dtmfGroup7: this.parseDTMF(data, 0x1890, 16),        // Group 7 call code
+            dtmfGroup8: this.parseDTMF(data, 0x18A0, 16),        // Group 8 call code
+            dtmfBotCode: this.parseDTMF(data, 0x18C0, 16),       // Start Code (BOT) - PTT ID
+            dtmfEotCode: this.parseDTMF(data, 0x18D0, 16),       // End Code (EOT) - PTT ID
 
             // Legacy/unused fields (kept for compatibility)
             scanRev: 0,
@@ -801,7 +833,44 @@ const BLE = {
     },
 
     /**
-     * Decode FM frequency from 2 bytes (16-bit BCD in 0.1 MHz units)
+     * Parse DTMF code from memory (CHIRP driver format)
+     * @param {Uint8Array} data - Raw memory
+     * @param {number} offset - Start offset
+     * @param {number} size - Field size in bytes (16 for most codes)
+     * @returns {string} DTMF code string (0-9, A-D, *, #) or empty string
+     *
+     * Encoding (from CHIRP tdh8.py):
+     * - 0x00-0x09 → '0'-'9'
+     * - 0x0A-0x0D → 'A'-'D'
+     * - 0x0E → '*'
+     * - 0x0F → '#'
+     * - 0xFF → padding/empty
+     * - Last byte = length (number of actual digits, 0-15)
+     */
+    parseDTMF(data, offset, size) {
+        const DTMF_MAP = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                          'A', 'B', 'C', 'D', '*', '#'];
+
+        // Read length from last byte (if size includes length byte)
+        const hasLengthByte = (size === 16);
+        const dataLen = hasLengthByte ? size - 1 : size;
+        const length = hasLengthByte ? (data[offset + size - 1] || 0) : dataLen;
+
+        let code = '';
+        for (let i = 0; i < Math.min(length, dataLen); i++) {
+            const b = data[offset + i];
+            // Don't break on 0xFF - length byte tells us when to stop!
+            // Only add valid DTMF characters
+            if (b <= 0x0F) {
+                code += DTMF_MAP[b];
+            }
+        }
+
+        return code;
+    },
+
+    /**
+     * Decode FM frequency from 2 bytes (16-bit BCD little-endian in 0.1 MHz units)
      * @param {Uint8Array} data - Raw memory
      * @param {number} offset - Byte offset
      * @returns {number} Frequency in MHz (e.g., 90.5)
@@ -811,11 +880,36 @@ const BLE = {
         const lowByte = data[offset] || 0;
         const highByte = data[offset + 1] || 0;
 
-        // Extract BCD digits
+        // Extract BCD digits (little-endian: low byte = least significant)
         const d0 = lowByte & 0x0F;
         const d1 = (lowByte >> 4) & 0x0F;
         const d2 = highByte & 0x0F;
         const d3 = (highByte >> 4) & 0x0F;
+
+        // Combine into value (in 0.1 MHz units)
+        const tenths = d0 + d1 * 10 + d2 * 100 + d3 * 1000;
+
+        // Convert to MHz
+        return tenths / 10;
+    },
+
+    /**
+     * Decode 2 bytes as BCD big-endian (for TX band limits)
+     * @param {Uint8Array} data - Raw memory
+     * @param {number} offset - Byte offset
+     * @returns {number} Frequency in MHz (e.g., 144.0)
+     *
+     * Example: bytes [0x14, 0x40] → digits 1-4-4-0 → 1440 tenths → 144.0 MHz
+     */
+    decodeBCDBigEndian(data, offset) {
+        const byte0 = data[offset] || 0;
+        const byte1 = data[offset + 1] || 0;
+
+        // Extract BCD digits (big-endian: first byte = most significant)
+        const d3 = (byte0 >> 4) & 0x0F;  // thousands
+        const d2 = byte0 & 0x0F;          // hundreds
+        const d1 = (byte1 >> 4) & 0x0F;  // tens
+        const d0 = byte1 & 0x0F;          // ones
 
         // Combine into value (in 0.1 MHz units)
         const tenths = d0 + d1 * 10 + d2 * 100 + d3 * 1000;
@@ -1215,10 +1309,50 @@ const BLE = {
         buffer[0x1821] = parseInt(ani[1]) || 0;
         buffer[0x1822] = parseInt(ani[2]) || 0;
 
+        // ===== DTMF/ANI System (discovered from CHIRP - chirpmyradio.com/issues/11968) =====
+        // 0x1800-0x180F: Stun Code (H3/H3-Plus only)
+        this.encodeDTMF(buffer, 0x1800, settings.dtmfStunCode || '', 16);
+
+        // 0x1810-0x181F: Kill Code (H3/H3-Plus only)
+        this.encodeDTMF(buffer, 0x1810, settings.dtmfKillCode || '', 16);
+
+        // 0x1829: Group Code Selector
+        buffer[0x1829] = settings.dtmfGroupCode || 0;
+
+        // 0x1830-0x18AF: Group Call Codes (8 groups × 16 bytes)
+        this.encodeDTMF(buffer, 0x1830, settings.dtmfGroup1 || '', 16);
+        this.encodeDTMF(buffer, 0x1840, settings.dtmfGroup2 || '', 16);
+        this.encodeDTMF(buffer, 0x1850, settings.dtmfGroup3 || '', 16);
+        this.encodeDTMF(buffer, 0x1860, settings.dtmfGroup4 || '', 16);
+        this.encodeDTMF(buffer, 0x1870, settings.dtmfGroup5 || '', 16);
+        this.encodeDTMF(buffer, 0x1880, settings.dtmfGroup6 || '', 16);
+        this.encodeDTMF(buffer, 0x1890, settings.dtmfGroup7 || '', 16);
+        this.encodeDTMF(buffer, 0x18A0, settings.dtmfGroup8 || '', 16);
+
+        // 0x18C0-0x18CF: Start Code (BOT) - PTT ID
+        this.encodeDTMF(buffer, 0x18C0, settings.dtmfBotCode || '', 16);
+
+        // 0x18D0-0x18DF: End Code (EOT) - PTT ID
+        this.encodeDTMF(buffer, 0x18D0, settings.dtmfEotCode || '', 16);
+
         // ===== 0x1C00: Startup Messages =====
         this.encodeString(buffer, 0x1C00, settings.msg1 || '', 16);
         this.encodeString(buffer, 0x1C10, settings.msg2 || '', 16);
         this.encodeString(buffer, 0x1C20, settings.msg3 || '', 16);
+
+        // ===== 0x0CB0: VFO Offsets (from CHIRP) =====
+        this.encodeBCDFrequency(buffer, 0x0CB0, settings.vfoAOffset || 0);
+        this.encodeBCDFrequency(buffer, 0x0CB4, settings.vfoBOffset || 0);
+
+        // ===== 0x0CC0: TX Band Limits (Windows CPS source - BCD big-endian!) =====
+        this.encodeBCDBigEndian(buffer, 0x0CC0, settings.txVhfLow || 0);
+        this.encodeBCDBigEndian(buffer, 0x0CC2, settings.txVhfHigh || 0);
+        this.encodeBCDBigEndian(buffer, 0x0CC4, settings.txUhfLow || 0);
+        this.encodeBCDBigEndian(buffer, 0x0CC6, settings.txUhfHigh || 0);
+
+        // ===== 0x1F02-0x1F03: Repeater Tail Settings (from CHIRP) =====
+        buffer[0x1F02] = settings.rpSte || 0;
+        buffer[0x1F03] = settings.rpToneDelay || 0;
 
         // ===== 0x1F20 block: Secondary settings =====
         // 0x1F20: MIC Gain [33]
@@ -1263,6 +1397,9 @@ const BLE = {
         this.encodeFMScanBitmap(buffer, settings.fmChannels || []);
 
         // ===== 0x3000 block: Extended settings =====
+        // 0x3004: Active VFO (0=A, 1=B)
+        buffer[0x3004] = settings.activeVfo || 0;
+
         // 0x300A: bit 7=STE[23], bits 4-5=Alarm Mode[22]
         let flags0x300A = buffer[0x300A] || 0;
         if (settings.ste) flags0x300A |= 0x80; else flags0x300A &= ~0x80;
@@ -1293,6 +1430,55 @@ const BLE = {
     },
 
     /**
+     * Encode DTMF code to memory (CHIRP driver format)
+     * @param {Uint8Array} buffer - Target buffer
+     * @param {number} offset - Start offset
+     * @param {string} code - DTMF code string (0-9, A-D, *, #)
+     * @param {number} size - Field size in bytes (16 for most codes)
+     *
+     * Encoding (from CHIRP tdh8.py):
+     * - '0'-'9' → 0x00-0x09
+     * - 'A'-'D' → 0x0A-0x0D
+     * - '*' → 0x0E
+     * - '#' → 0x0F
+     * - Padding → 0xFF
+     * - Last byte = length (number of actual digits, 0-15)
+     */
+    encodeDTMF(buffer, offset, code, size) {
+        const DTMF_REVERSE_MAP = {
+            '0': 0x00, '1': 0x01, '2': 0x02, '3': 0x03,
+            '4': 0x04, '5': 0x05, '6': 0x06, '7': 0x07,
+            '8': 0x08, '9': 0x09, 'A': 0x0A, 'B': 0x0B,
+            'C': 0x0C, 'D': 0x0D, '*': 0x0E, '#': 0x0F
+        };
+
+        // Clean and uppercase the code
+        const cleanCode = (code || '').toUpperCase().replace(/[^0-9A-D*#]/g, '');
+        const hasLengthByte = (size === 16);
+        const dataLen = hasLengthByte ? size - 1 : size;
+
+        // Fill with padding (0xFF)
+        for (let i = 0; i < size; i++) {
+            buffer[offset + i] = 0xFF;
+        }
+
+        // Write DTMF digits
+        const length = Math.min(cleanCode.length, dataLen);
+        for (let i = 0; i < length; i++) {
+            const char = cleanCode[i];
+            const value = DTMF_REVERSE_MAP[char];
+            buffer[offset + i] = (value !== undefined) ? value : 0xFF;
+        }
+
+        // Write length byte (last byte)
+        if (hasLengthByte) {
+            // If all digits are 0xFF, set length to 0
+            const allEmpty = cleanCode.length === 0;
+            buffer[offset + size - 1] = allEmpty ? 0 : length;
+        }
+    },
+
+    /**
      * Encode FM frequency as 16-bit BCD (in 0.1 MHz units)
      * @param {Uint8Array} buffer - Target buffer
      * @param {number} offset - Byte offset
@@ -1310,6 +1496,29 @@ const BLE = {
 
         buffer[offset] = (d1 << 4) | d0;
         buffer[offset + 1] = (d3 << 4) | d2;
+    },
+
+    /**
+     * Encode 16-bit BCD big-endian (for TX band limits)
+     * @param {Uint8Array} buffer - Target buffer
+     * @param {number} offset - Byte offset
+     * @param {number} freqMHz - Frequency in MHz (e.g., 144.0)
+     *
+     * Example: 144.0 MHz → 1440 tenths → BCD 1-4-4-0 → bytes [0x14, 0x40]
+     */
+    encodeBCDBigEndian(buffer, offset, freqMHz) {
+        // Convert MHz to 0.1 MHz units (tenths)
+        const tenths = Math.round(freqMHz * 10);
+
+        // Extract decimal digits
+        const d0 = tenths % 10;          // ones
+        const d1 = Math.floor(tenths / 10) % 10;    // tens
+        const d2 = Math.floor(tenths / 100) % 10;   // hundreds
+        const d3 = Math.floor(tenths / 1000) % 10;  // thousands
+
+        // Write as big-endian (first byte = most significant)
+        buffer[offset] = (d3 << 4) | d2;      // thousands and hundreds
+        buffer[offset + 1] = (d1 << 4) | d0;  // tens and ones
     },
 
     /**

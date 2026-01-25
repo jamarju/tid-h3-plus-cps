@@ -1,6 +1,6 @@
 # Tidradio H3 Plus Web CPS
 
-Web-based programming software for the Tidradio H3 Plus radio. No apps, no cables - just your browser and Bluetooth.
+Web-based Bluetooth Low Energy (BLE) Customer Programming Software (CPS) for the Tidradio H3 Plus radio.
 
 **[Launch App](https://jamarju.github.io/tid-h3-plus-cps/)**
 
