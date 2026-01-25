@@ -75,6 +75,20 @@ Record layout (offsets are relative to a channel’s base):
 
 - 446.00625 MHz → bytes `25 06 60 44`
 
+**CTCSS/DCS tone encoding (16-bit, little-endian):**
+
+| Type | High byte | Example |
+|------|-----------|---------|
+| OFF | 0x00 or 0xFF | `00 00` or `FF FF` |
+| CTCSS | BCD of tone×10 | 88.5 Hz → `85 08` (0x0885) |
+| DCS Normal | `0x80 \| d2` | D754N → `54 87` (d2=7, low=54) |
+| DCS Inverted | `0xC0 \| d2` | D023I → `23 C0` (d2=0, low=23) |
+
+- CTCSS: Stored as BCD of frequency × 10 (e.g., 88.5 Hz = 885 → 0x0885 → `85 08`)
+- DCS Normal: High byte = `0x80 | d2` where d2 is hundreds digit
+- DCS Inverted: High byte = `0xC0 | d2` (adds 0x40 invert flag)
+- Low byte: BCD of `(d1 << 4) | d0` where d1=tens, d0=ones
+
 ## Settings block 1 (0x0C90–0x1377)
 
 | Offset | Setting | Menu # | Encoding | Source |
@@ -184,8 +198,8 @@ This block contains the DTMF/ANI system, plus several bitmaps and VFO-related st
 | 0x1900–0x1918 | Channel valid bitmap (CH1–CH199) |  | 199 bits, 1=valid/programmed, 0=empty | [1] |
 | 0x1920–0x1938 | Scan bitmap (CH1–CH199) |  | 199 bits, 1=scan on, 0=scan off | [1] |
 | 0x1940–0x1943 | FM scan bitmap (FM CH1–CH25) |  | 25 bits, 1=scan enabled, 0=scan disabled | [1] |
-| 0x1950–0x195F | VFO A frequency record |  | 16-byte channel-like record (RX/TX freq + tones + flags) | [1] |
-| 0x1960–0x196F | VFO B frequency record |  | 16-byte channel-like record (RX/TX freq + tones + flags) | [1] |
+| 0x1950–0x195F | VFO A frequency record |  | 16-byte record: RX freq, tones, scramble, flags (byte 14 has offset dir) | [1] |
+| 0x1960–0x196F | VFO B frequency record |  | 16-byte record: RX freq, tones, scramble, flags (byte 14 has offset dir) | [1] |
 | 0x1970–0x1971 | FM VFO frequency |  | 16-bit BCD little-endian, 0.1 MHz units | [1] |
 | 0x1B40–0x1B45 | Password | CPS-only | 6 bytes ASCII, max 6 chars | [3] |
 | 0x1C00–0x1C2F | Startup messages (3 strings) |  | 3 × 16 bytes, null-padded string | [1] |
@@ -292,7 +306,35 @@ Bit layout example:
 
 ### 0x1950 / 0x1960 - VFO frequency records
 
-VFO A and B use the same 16-byte structure as channel records (RX/TX freq + tones + flags). Names are not stored for VFOs.
+VFO A (0x1950-0x195F) and VFO B (0x1960-0x196F) use a 16-byte structure similar to channel records, but with key differences:
+
+**VFO record layout (offsets relative to base):**
+
+| Rel. offset | Size | Field | Encoding |
+|------------:|-----:|-------|----------|
+| 0x00–0x03 | 4 | RX frequency | BCD little-endian, 10 Hz units |
+| 0x04–0x07 | 4 | TX frequency | **NOT USED** - radio calculates TX = RX ± offset |
+| 0x08–0x09 | 2 | RX subtone (decode) | Same as channels (CTCSS/DCS) |
+| 0x0A–0x0B | 2 | TX subtone (encode) | Same as channels (CTCSS/DCS) |
+| 0x0C | 1 | Scramble level | 0=off, 1–16=level |
+| 0x0D | 1 | Flags 2 | Bit 2: Busy lock (assumed same as channels) |
+| 0x0E | 1 | Flags 3 | **VFO-specific** - see below |
+| 0x0F | 1 | Unknown | Always 0x00 |
+
+**Flags 3 (byte 0x0E) - VFO-specific encoding:**
+
+| Bits | Mask | Meaning |
+|------|------|---------|
+| 0–1 | 0x03 | Offset direction: 0=off (simplex), 1=negative (-), 2=positive (+) |
+| 3 | 0x08 | Bandwidth: 0=wide, 1=narrow |
+| 4 | 0x10 | TX power: 0=low, 1=high |
+
+**Key differences from channels:**
+- TX frequency bytes are not used; the radio calculates TX = RX ± offset
+- Offset direction is stored in byte 14 bits 0-1 (channels don't have this)
+- Offset value is stored separately at 0x0CB0 (VFO A) / 0x0CB4 (VFO B)
+- No PTT ID or frequency hop flags (those are channel-specific)
+- No channel name storage
 
 ### 0x1970–0x1971 - FM VFO examples
 

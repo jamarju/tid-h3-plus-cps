@@ -41,7 +41,7 @@ const Grid = {
         ];
         options.push(...ctcssTones);
 
-        // DCS codes
+        // DCS codes - Normal (DXXXN) and Inverted (DXXXI)
         const dcsCodes = [
             '023', '025', '026', '031', '032', '036', '043', '047',
             '051', '053', '054', '065', '071', '072', '073', '074',
@@ -57,7 +57,10 @@ const Grid = {
             '612', '624', '627', '631', '632', '654', '662', '664',
             '703', '712', '723', '731', '732', '734', '743', '754'
         ];
-        options.push(...dcsCodes.map(c => 'D' + c));
+        // Add normal DCS (DXXXN)
+        options.push(...dcsCodes.map(c => 'D' + c + 'N'));
+        // Add inverted DCS (DXXXI)
+        options.push(...dcsCodes.map(c => 'D' + c + 'I'));
 
         return options;
     })(),

@@ -400,7 +400,7 @@
                 </div>
 
                 <div class="settings-group">
-                    <h3>VFO Settings</h3>
+                    <h3>VFO Selection</h3>
                     <div class="setting-row">
                         <label for="activeVfo" title="Which VFO (A or B) is currently active">Active VFO</label>
                         <select id="activeVfo">
@@ -408,29 +408,141 @@
                             <option value="1">B</option>
                         </select>
                     </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>VFO A</h3>
                     <div class="setting-row">
-                        <label for="vfoARxFreq" title="VFO A receive frequency in MHz">VFO A RX Freq</label>
+                        <label for="vfoARxFreq" title="VFO A receive frequency in MHz">RX Frequency</label>
                         <input type="text" id="vfoARxFreq" class="text-input" placeholder="446.00625">
                     </div>
                     <div class="setting-row">
-                        <label for="vfoATxFreq" title="VFO A transmit frequency in MHz">VFO A TX Freq</label>
-                        <input type="text" id="vfoATxFreq" class="text-input" placeholder="446.00625">
+                        <label for="vfoAOffset" title="Repeater offset frequency in MHz">Offset (MHz)</label>
+                        <input type="text" id="vfoAOffset" class="text-input" placeholder="0.600">
                     </div>
                     <div class="setting-row">
-                        <label for="vfoAOffset" title="VFO A frequency offset in MHz (used with repeater offset direction +/-)">VFO A Offset</label>
-                        <input type="text" id="vfoAOffset" class="text-input" placeholder="5.00000">
+                        <label for="vfoAOffsetDir" title="Offset direction: Off (simplex), + (TX higher), - (TX lower)">Offset Direction</label>
+                        <select id="vfoAOffsetDir">
+                            <option value="OFF">Off</option>
+                            <option value="+">+ (TX Higher)</option>
+                            <option value="-">- (TX Lower)</option>
+                        </select>
                     </div>
                     <div class="setting-row">
-                        <label for="vfoBRxFreq" title="VFO B receive frequency in MHz">VFO B RX Freq</label>
+                        <label for="vfoARxTone" title="CTCSS/DCS tone for receive (decode)">RX Subtone</label>
+                        <select id="vfoARxTone" class="tone-select"></select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoATxTone" title="CTCSS/DCS tone for transmit (encode)">TX Subtone</label>
+                        <select id="vfoATxTone" class="tone-select"></select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoABandwidth" title="Channel bandwidth: Wide (25kHz) or Narrow (12.5kHz)">Bandwidth</label>
+                        <select id="vfoABandwidth">
+                            <option value="W">Wide (25kHz)</option>
+                            <option value="N">Narrow (12.5kHz)</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoATxPower" title="Transmit power level">TX Power</label>
+                        <select id="vfoATxPower">
+                            <option value="LOW">Low</option>
+                            <option value="HIGH">High</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoAScramble" title="Voice scrambler level (0=off, 1-16=level)">Scramble</label>
+                        <select id="vfoAScramble">
+                            <option value="0">OFF</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                            <option value="13">13</option>
+                            <option value="14">14</option>
+                            <option value="15">15</option>
+                            <option value="16">16</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoABusyLock" title="Block transmit when channel is busy">Busy Lock</label>
+                        <input type="checkbox" id="vfoABusyLock">
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>VFO B</h3>
+                    <div class="setting-row">
+                        <label for="vfoBRxFreq" title="VFO B receive frequency in MHz">RX Frequency</label>
                         <input type="text" id="vfoBRxFreq" class="text-input" placeholder="446.09375">
                     </div>
                     <div class="setting-row">
-                        <label for="vfoBTxFreq" title="VFO B transmit frequency in MHz (Note: may not be used by radio)">VFO B TX Freq</label>
-                        <input type="text" id="vfoBTxFreq" class="text-input" placeholder="446.09375">
+                        <label for="vfoBOffset" title="Repeater offset frequency in MHz">Offset (MHz)</label>
+                        <input type="text" id="vfoBOffset" class="text-input" placeholder="0.600">
                     </div>
                     <div class="setting-row">
-                        <label for="vfoBOffset" title="VFO B frequency offset in MHz (used with repeater offset direction +/-)">VFO B Offset</label>
-                        <input type="text" id="vfoBOffset" class="text-input" placeholder="5.00000">
+                        <label for="vfoBOffsetDir" title="Offset direction: Off (simplex), + (TX higher), - (TX lower)">Offset Direction</label>
+                        <select id="vfoBOffsetDir">
+                            <option value="OFF">Off</option>
+                            <option value="+">+ (TX Higher)</option>
+                            <option value="-">- (TX Lower)</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoBRxTone" title="CTCSS/DCS tone for receive (decode)">RX Subtone</label>
+                        <select id="vfoBRxTone" class="tone-select"></select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoBTxTone" title="CTCSS/DCS tone for transmit (encode)">TX Subtone</label>
+                        <select id="vfoBTxTone" class="tone-select"></select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoBBandwidth" title="Channel bandwidth: Wide (25kHz) or Narrow (12.5kHz)">Bandwidth</label>
+                        <select id="vfoBBandwidth">
+                            <option value="W">Wide (25kHz)</option>
+                            <option value="N">Narrow (12.5kHz)</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoBTxPower" title="Transmit power level">TX Power</label>
+                        <select id="vfoBTxPower">
+                            <option value="LOW">Low</option>
+                            <option value="HIGH">High</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoBScramble" title="Voice scrambler level (0=off, 1-16=level)">Scramble</label>
+                        <select id="vfoBScramble">
+                            <option value="0">OFF</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                            <option value="13">13</option>
+                            <option value="14">14</option>
+                            <option value="15">15</option>
+                            <option value="16">16</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoBBusyLock" title="Block transmit when channel is busy">Busy Lock</label>
+                        <input type="checkbox" id="vfoBBusyLock">
                     </div>
                 </div>
 
@@ -630,6 +742,10 @@
                         <label for="amBand" title="Enable AM band reception for commercial AM radio">AM Band</label>
                         <input type="checkbox" id="amBand">
                     </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Unknown Settings</h3>
                     <div class="setting-row">
                         <label for="onlyChMode" title="Windows CPS setting 'Only CH Mode'. Purpose unknown - testing shows VFO mode still works when enabled. May affect other radio behavior.">Only CH Mode</label>
                         <input type="checkbox" id="onlyChMode">

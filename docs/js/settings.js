@@ -31,6 +31,45 @@ const Settings = {
         { value: 6, label: 'Weather' }
     ],
 
+    // Tone options (CTCSS + DCS normal + DCS inverted)
+    toneOptions: (() => {
+        const options = ['OFF'];
+
+        // CTCSS tones
+        const ctcssTones = [
+            '67.0', '69.3', '71.9', '74.4', '77.0', '79.7', '82.5', '85.4',
+            '88.5', '91.5', '94.8', '97.4', '100.0', '103.5', '107.2', '110.9',
+            '114.8', '118.8', '123.0', '127.3', '131.8', '136.5', '141.3', '146.2',
+            '151.4', '156.7', '162.2', '167.9', '173.8', '179.9', '186.2', '192.8',
+            '203.5', '206.5', '210.7', '218.1', '225.7', '229.1', '233.6', '241.8',
+            '250.3', '254.1'
+        ];
+        options.push(...ctcssTones);
+
+        // DCS codes - Normal (DXXXN) and Inverted (DXXXI)
+        const dcsCodes = [
+            '023', '025', '026', '031', '032', '036', '043', '047',
+            '051', '053', '054', '065', '071', '072', '073', '074',
+            '114', '115', '116', '122', '125', '131', '132', '134',
+            '143', '145', '152', '155', '156', '162', '165', '172',
+            '174', '205', '212', '223', '225', '226', '243', '244',
+            '245', '246', '251', '252', '255', '261', '263', '265',
+            '266', '271', '274', '306', '311', '315', '325', '331',
+            '332', '343', '346', '351', '356', '364', '365', '371',
+            '411', '412', '413', '423', '431', '432', '445', '446',
+            '452', '454', '455', '462', '464', '465', '466', '503',
+            '506', '516', '523', '526', '532', '546', '565', '606',
+            '612', '624', '627', '631', '632', '654', '662', '664',
+            '703', '712', '723', '731', '732', '734', '743', '754'
+        ];
+        // Add normal DCS (DXXXN)
+        options.push(...dcsCodes.map(c => 'D' + c + 'N'));
+        // Add inverted DCS (DXXXI)
+        options.push(...dcsCodes.map(c => 'D' + c + 'I'));
+
+        return options;
+    })(),
+
     /**
      * Initialize settings panel
      * @param {Object} settings - Settings object
@@ -38,8 +77,25 @@ const Settings = {
     init(settings) {
         this.settings = settings;
         this.populateKeySelects();
+        this.populateToneSelects();
         this.loadToForm();
         this.attachEventListeners();
+    },
+
+    /**
+     * Populate tone selects with CTCSS/DCS options
+     */
+    populateToneSelects() {
+        const toneSelects = document.querySelectorAll('.tone-select');
+        toneSelects.forEach(select => {
+            select.innerHTML = '';
+            for (const tone of this.toneOptions) {
+                const option = document.createElement('option');
+                option.value = tone;
+                option.textContent = tone;
+                select.appendChild(option);
+            }
+        });
     },
 
     /**
@@ -180,13 +236,29 @@ const Settings = {
         // VFO Settings
         this.setSelectValue('activeVfo', this.settings.activeVfo);
 
-        // Text inputs - VFO frequencies
-        this.setTextValue('vfoARxFreq', this.settings.vfoARxFreq ? this.settings.vfoARxFreq.toFixed(5) : '');
-        this.setTextValue('vfoATxFreq', this.settings.vfoATxFreq ? this.settings.vfoATxFreq.toFixed(5) : '');
-        this.setTextValue('vfoAOffset', this.settings.vfoAOffset ? this.settings.vfoAOffset.toFixed(5) : '');
-        this.setTextValue('vfoBRxFreq', this.settings.vfoBRxFreq ? this.settings.vfoBRxFreq.toFixed(5) : '');
-        this.setTextValue('vfoBTxFreq', this.settings.vfoBTxFreq ? this.settings.vfoBTxFreq.toFixed(5) : '');
-        this.setTextValue('vfoBOffset', this.settings.vfoBOffset ? this.settings.vfoBOffset.toFixed(5) : '');
+        // VFO A
+        const vfoA = this.settings.vfoA || {};
+        this.setTextValue('vfoARxFreq', vfoA.rxFreq ? vfoA.rxFreq.toFixed(5) : '');
+        this.setTextValue('vfoAOffset', vfoA.offset ? vfoA.offset.toFixed(5) : '');
+        this.setSelectValue('vfoAOffsetDir', vfoA.offsetDir || 'OFF');
+        this.setTextValue('vfoARxTone', vfoA.rxTone || 'OFF');
+        this.setTextValue('vfoATxTone', vfoA.txTone || 'OFF');
+        this.setSelectValue('vfoABandwidth', vfoA.bandwidth || 'W');
+        this.setSelectValue('vfoATxPower', vfoA.txPower || 'LOW');
+        this.setSelectValue('vfoAScramble', vfoA.scramble || 0);
+        this.setCheckboxValue('vfoABusyLock', vfoA.busyLock);
+
+        // VFO B
+        const vfoB = this.settings.vfoB || {};
+        this.setTextValue('vfoBRxFreq', vfoB.rxFreq ? vfoB.rxFreq.toFixed(5) : '');
+        this.setTextValue('vfoBOffset', vfoB.offset ? vfoB.offset.toFixed(5) : '');
+        this.setSelectValue('vfoBOffsetDir', vfoB.offsetDir || 'OFF');
+        this.setTextValue('vfoBRxTone', vfoB.rxTone || 'OFF');
+        this.setTextValue('vfoBTxTone', vfoB.txTone || 'OFF');
+        this.setSelectValue('vfoBBandwidth', vfoB.bandwidth || 'W');
+        this.setSelectValue('vfoBTxPower', vfoB.txPower || 'LOW');
+        this.setSelectValue('vfoBScramble', vfoB.scramble || 0);
+        this.setCheckboxValue('vfoBBusyLock', vfoB.busyLock);
 
         // Text inputs - TX Band Limits
         this.setTextValue('txVhfLow', this.settings.txVhfLow ? this.settings.txVhfLow.toFixed(1) : '');
@@ -256,6 +328,16 @@ const Settings = {
 
             if (!id || !this.settings) return;
 
+            // Handle VFO A/B fields (nested objects)
+            if (id.startsWith('vfoA') && id !== 'activeVfo') {
+                this.updateVFOField('vfoA', id.substring(4), el);
+                return;
+            }
+            if (id.startsWith('vfoB')) {
+                this.updateVFOField('vfoB', id.substring(4), el);
+                return;
+            }
+
             if (el.type === 'checkbox') {
                 this.settings[id] = el.checked;
             } else if (el.tagName === 'SELECT') {
@@ -270,8 +352,8 @@ const Settings = {
                 const value = parseInt(el.value);
                 this.settings[id] = isNaN(value) ? 0 : value;
             } else if (el.type === 'text') {
-                // Check if it's a frequency field (VFO or TX band limits)
-                if ((id.includes('vfo') && (id.includes('Freq') || id.includes('Offset'))) || id.startsWith('tx')) {
+                // Check if it's a frequency field (TX band limits)
+                if (id.startsWith('tx')) {
                     const freq = parseFloat(el.value);
                     this.settings[id] = isNaN(freq) ? 0 : freq;
                 } else {
@@ -286,6 +368,38 @@ const Settings = {
         });
 
         this.initTooltips(container);
+    },
+
+    /**
+     * Update a VFO field (handles nested vfoA/vfoB objects)
+     * @param {string} vfoKey - 'vfoA' or 'vfoB'
+     * @param {string} fieldName - Field name with first letter lowercase (e.g., 'RxFreq' -> 'rxFreq')
+     * @param {HTMLElement} el - The form element
+     */
+    updateVFOField(vfoKey, fieldName, el) {
+        // Ensure VFO object exists
+        if (!this.settings[vfoKey]) {
+            this.settings[vfoKey] = {};
+        }
+
+        // Convert field name: 'RxFreq' -> 'rxFreq', 'OffsetDir' -> 'offsetDir'
+        const key = fieldName.charAt(0).toLowerCase() + fieldName.slice(1);
+
+        if (el.type === 'checkbox') {
+            this.settings[vfoKey][key] = el.checked;
+        } else if (el.tagName === 'SELECT') {
+            const value = parseInt(el.value);
+            this.settings[vfoKey][key] = isNaN(value) ? el.value : value;
+        } else if (el.type === 'text') {
+            // Frequency/offset fields
+            if (key.includes('Freq') || key === 'offset') {
+                const freq = parseFloat(el.value);
+                this.settings[vfoKey][key] = isNaN(freq) ? 0 : freq;
+            } else {
+                // Tone fields - uppercase
+                this.settings[vfoKey][key] = el.value.toUpperCase().trim() || 'OFF';
+            }
+        }
     },
 
     /**

@@ -28,16 +28,16 @@ const BLE = {
         [0x0000, 0x0020],  // Header with modulation at 0x1F
         [0x0C90, 0x0CD0],  // Function keys + main settings + VFO offsets + TX band limits
         [0x1800, 0x18E0],  // DTMF/ANI system (stun, kill, groups, BOT/EOT)
+        [0x1950, 0x1980],  // VFO A/B records (0x1950-0x196F) + FM VFO (0x1970-0x1971)
         [0x1C00, 0x1C40],  // Startup messages
         [0x1F00, 0x1F40],  // Repeater tail + secondary settings + bluetooth
         [0x3000, 0x3020],  // Extended settings (active VFO, STE, alarm, PTT delay, talk around)
     ],
 
     WRITE_RANGES_CHANNELS: [
-        [0x0010, 0x0C80],  // 199 channels × 16 bytes
-        [0x0D40, 0x1000],  // Channel names
-        [0x1900, 0x1920],  // Channel valid bitmap (controls which channels can be cycled to)
-        [0x1920, 0x1940],  // Scan bitmap
+        [0x0000, 0x0C80],  // Header + 199 channels × 16 bytes (aligned to 32)
+        [0x0D40, 0x1380],  // Channel names (199 × 8 bytes, rounded up to 32-byte boundary)
+        [0x1900, 0x1940],  // Channel valid bitmap + Scan bitmap (combined, both 32-byte aligned)
     ],
 
     WRITE_RANGES_FM: [
@@ -353,25 +353,30 @@ const BLE = {
             for (let addr = rangeStart; addr < rangeEnd && addr < data.length; addr += this.CHUNK_SIZE) {
                 const addrHi = (addr >> 8) & 0xFF;
                 const addrLo = addr & 0xFF;
-                const len = Math.min(this.CHUNK_SIZE, rangeEnd - addr, data.length - addr);
-                const chunk = data.slice(addr, addr + len);
+                const actualLen = Math.min(this.CHUNK_SIZE, rangeEnd - addr, data.length - addr);
+                const chunk = data.slice(addr, addr + actualLen);
 
-                // Calculate checksum (sum of data bytes, mod 256)
+                // Always send 32 bytes - pad with 0xFF if needed (protocol requires 0x20)
+                const paddedChunk = new Uint8Array(this.CHUNK_SIZE);
+                paddedChunk.fill(0xFF);
+                paddedChunk.set(chunk, 0);
+
+                // Calculate checksum on padded data (sum of all 32 bytes, mod 256)
                 let checksum = 0;
-                for (let i = 0; i < len; i++) {
-                    checksum = (checksum + chunk[i]) & 0xFF;
+                for (let i = 0; i < this.CHUNK_SIZE; i++) {
+                    checksum = (checksum + paddedChunk[i]) & 0xFF;
                 }
 
-                // Packet format: W + addrHi + addrLo + len + data + checksum
-                const packet = new Uint8Array(5 + len);
+                // Packet format: W + addrHi + addrLo + 0x20 + data[32] + checksum
+                const packet = new Uint8Array(5 + this.CHUNK_SIZE);
                 packet[0] = 0x57; // 'W'
                 packet[1] = addrHi;
                 packet[2] = addrLo;
-                packet[3] = len;
-                packet.set(chunk, 4);
-                packet[4 + len] = checksum;
+                packet[3] = this.CHUNK_SIZE; // Always 0x20 (32)
+                packet.set(paddedChunk, 4);
+                packet[4 + this.CHUNK_SIZE] = checksum;
 
-                console.log(`Write 0x${addr.toString(16).toUpperCase()}: ${len} bytes, checksum 0x${checksum.toString(16).toUpperCase()}`);
+                console.log(`Write 0x${addr.toString(16).toUpperCase()}: ${actualLen} bytes (padded to 32), checksum 0x${checksum.toString(16).toUpperCase()}`);
                 await this.write(packet);
 
                 // Wait for ACK (0x06) after each packet
@@ -383,7 +388,7 @@ const BLE = {
                     throw new Error(`Write failed at address 0x${addr.toString(16)}: no ACK`);
                 }
 
-                bytesWritten += len;
+                bytesWritten += actualLen;
                 if (onProgress) {
                     onProgress(bytesWritten / totalBytes);
                 }
@@ -521,6 +526,53 @@ const BLE = {
     },
 
     /**
+     * Parse VFO record from memory (16 bytes, similar to channel but with offset direction)
+     * VFO A: 0x1950-0x195F, VFO B: 0x1960-0x196F
+     * Offset values stored separately at 0x0CB0 (A) and 0x0CB4 (B)
+     *
+     * @param {Uint8Array} data - Raw memory
+     * @param {number} offset - VFO record offset (0x1950 or 0x1960)
+     * @param {number} offsetValueAddr - Offset frequency address (0x0CB0 or 0x0CB4)
+     * @returns {Object} VFO settings object
+     */
+    parseVFO(data, offset, offsetValueAddr) {
+        // RX frequency (bytes 0-3) - TX is calculated from RX ± offset
+        const rxFreq = this.decodeBCDFrequency(data, offset);
+
+        // Tones (bytes 8-11)
+        const rxTone = (data[offset + 8] | (data[offset + 9] << 8));
+        const txTone = (data[offset + 10] | (data[offset + 11] << 8));
+
+        // Scramble (byte 12)
+        const scramble = data[offset + 12] || 0;
+
+        // Flags2 (byte 13) - same as channels
+        const flags2 = data[offset + 13] || 0;
+
+        // Flags3 (byte 14) - VFO-specific: bits 0-1=offset dir, bit 3=BW, bit 4=power
+        const flags3 = data[offset + 14] || 0;
+
+        // Offset direction: bits 0-1 (0=off, 1=-, 2=+)
+        const offsetDir = flags3 & 0x03;
+        const offsetDirMap = ['OFF', '-', '+'];
+
+        // Offset value from separate location
+        const offsetValue = this.decodeBCDFrequency(data, offsetValueAddr);
+
+        return {
+            rxFreq: rxFreq,
+            rxTone: this.decodeTone(rxTone),
+            txTone: this.decodeTone(txTone),
+            scramble: scramble,
+            busyLock: !!(flags2 & 0x04),           // Byte 13, bit 2 (assumed same as channel)
+            bandwidth: (flags3 & 0x08) ? 'N' : 'W', // Byte 14, bit 3
+            txPower: (flags3 & 0x10) ? 'HIGH' : 'LOW', // Byte 14, bit 4
+            offsetDir: offsetDirMap[offsetDir],
+            offset: offsetValue
+        };
+    },
+
+    /**
      * Decode BCD frequency from 4 bytes (little-endian)
      * @param {Uint8Array} data - Raw memory
      * @param {number} offset - Byte offset
@@ -550,22 +602,24 @@ const BLE = {
     /**
      * Decode CTCSS/DCS tone from 2 bytes (little-endian BCD)
      * @param {number} value - Raw 16-bit tone value
-     * @returns {string} Tone string
+     * @returns {string} Tone string (e.g., 'OFF', '88.5', 'D023N', 'D023I')
      */
     decodeTone(value) {
         if (value === 0 || value === 0xFFFF) return 'OFF';
 
-        // Check if it's a DCS code (high byte has 0x80 bit set or specific pattern)
         const highByte = (value >> 8) & 0xFF;
         const lowByte = value & 0xFF;
 
-        if (highByte >= 0x40) {
+        // DCS detection: bit 7 (0x80) indicates DCS
+        if (highByte & 0x80) {
             // DCS code - decode as BCD
             const d0 = lowByte & 0x0F;
             const d1 = (lowByte >> 4) & 0x0F;
             const d2 = highByte & 0x0F;
             const dcsCode = d0 + d1 * 10 + d2 * 100;
-            return 'D' + dcsCode.toString().padStart(3, '0');
+            // Bit 6 (0x40) indicates inverted DCS
+            const suffix = (highByte & 0x40) ? 'I' : 'N';
+            return 'D' + dcsCode.toString().padStart(3, '0') + suffix;
         }
 
         // CTCSS tone - stored as BCD (e.g., 70 06 = 0670 = 67.0 Hz)
@@ -792,15 +846,11 @@ const BLE = {
             // VFO Settings
             activeVfo: data[0x3004] || 0,            // 0x3004: 0=A, 1=B
 
-            // VFO Frequencies (0x1950-0x195F, 0x1960-0x196F)
-            vfoARxFreq: this.decodeBCDFrequency(data, 0x1950),
-            vfoATxFreq: this.decodeBCDFrequency(data, 0x1954),
-            vfoBRxFreq: this.decodeBCDFrequency(data, 0x1960),
-            vfoBTxFreq: this.decodeBCDFrequency(data, 0x1964),
+            // VFO A (0x1950-0x195F) + offset at 0x0CB0
+            vfoA: this.parseVFO(data, 0x1950, 0x0CB0),
 
-            // VFO Offsets (0x0CB0-0x0CB7) - from CHIRP
-            vfoAOffset: this.decodeBCDFrequency(data, 0x0CB0),
-            vfoBOffset: this.decodeBCDFrequency(data, 0x0CB4),
+            // VFO B (0x1960-0x196F) + offset at 0x0CB4
+            vfoB: this.parseVFO(data, 0x1960, 0x0CB4),
 
             // TX Band Limits (0x0CC0-0x0CC7) - Windows CPS source (BCD big-endian!)
             txVhfLow: this.decodeBCDBigEndian(data, 0x0CC0),
@@ -1130,6 +1180,59 @@ const BLE = {
     },
 
     /**
+     * Encode VFO record to memory (16 bytes)
+     * VFO A: 0x1950-0x195F, VFO B: 0x1960-0x196F
+     * Offset values stored separately at 0x0CB0 (A) and 0x0CB4 (B)
+     *
+     * @param {Uint8Array} buffer - Target buffer
+     * @param {number} offset - VFO record offset (0x1950 or 0x1960)
+     * @param {number} offsetValueAddr - Offset frequency address (0x0CB0 or 0x0CB4)
+     * @param {Object} vfo - VFO settings object
+     */
+    encodeVFO(buffer, offset, offsetValueAddr, vfo) {
+        // RX frequency (bytes 0-3)
+        this.encodeBCDFrequency(buffer, offset, vfo.rxFreq || 0);
+
+        // TX frequency (bytes 4-7) - not used by radio, set to 0
+        buffer[offset + 4] = 0;
+        buffer[offset + 5] = 0;
+        buffer[offset + 6] = 0;
+        buffer[offset + 7] = 0;
+
+        // Encode tones (bytes 8-11)
+        const rxTone = this.encodeTone(vfo.rxTone);
+        const txTone = this.encodeTone(vfo.txTone);
+
+        buffer[offset + 8] = rxTone & 0xFF;
+        buffer[offset + 9] = (rxTone >> 8) & 0xFF;
+        buffer[offset + 10] = txTone & 0xFF;
+        buffer[offset + 11] = (txTone >> 8) & 0xFF;
+
+        // Byte 12: Scramble (0=off, 1-16=level)
+        buffer[offset + 12] = (vfo.scramble || 0) & 0x1F;
+
+        // Byte 13: Flags2 - bit 2=Busy Lock (assumed same as channel)
+        let flags2 = 0;
+        if (vfo.busyLock) flags2 |= 0x04;
+        buffer[offset + 13] = flags2;
+
+        // Byte 14: Flags3 - bits 0-1=offset dir, bit 3=BW, bit 4=power
+        let flags3 = 0;
+        // Offset direction: 0=off, 1=-, 2=+
+        const offsetDirMap = { 'OFF': 0, '-': 1, '+': 2 };
+        flags3 |= (offsetDirMap[vfo.offsetDir] || 0) & 0x03;
+        if (vfo.bandwidth === 'N') flags3 |= 0x08;
+        if (vfo.txPower === 'HIGH') flags3 |= 0x10;
+        buffer[offset + 14] = flags3;
+
+        // Byte 15: Unknown, set to 0
+        buffer[offset + 15] = 0x00;
+
+        // Offset value at separate address
+        this.encodeBCDFrequency(buffer, offsetValueAddr, vfo.offset || 0);
+    },
+
+    /**
      * Encode frequency as little-endian BCD (4 bytes)
      * @param {Uint8Array} buffer - Target buffer
      * @param {number} offset - Byte offset
@@ -1157,15 +1260,19 @@ const BLE = {
     encodeTone(tone) {
         if (!tone || tone === 'OFF') return 0;
 
-        // DCS code
+        // DCS code (e.g., 'D023N' or 'D023I' or legacy 'D023')
         if (tone.startsWith('D')) {
-            const code = parseInt(tone.substring(1), 10);
-            // Encode as BCD with high marker
+            // Check for inverted suffix
+            const isInverted = tone.endsWith('I');
+            // Extract numeric code (strip D prefix and optional N/I suffix)
+            const codeStr = tone.substring(1).replace(/[NI]$/, '');
+            const code = parseInt(codeStr, 10);
+            // Encode as BCD with DCS marker (0x80) and optional invert flag (0x40)
             const d0 = code % 10;
             const d1 = Math.floor(code / 10) % 10;
             const d2 = Math.floor(code / 100) % 10;
             const lowByte = (d1 << 4) | d0;
-            const highByte = 0x40 | d2;  // 0x40 marks it as DCS
+            const highByte = (isInverted ? 0xC0 : 0x80) | d2;  // 0x80=DCS, 0x40=inverted
             return (highByte << 8) | lowByte;
         }
 
@@ -1377,9 +1484,13 @@ const BLE = {
         this.encodeString(buffer, 0x1C10, settings.msg2 || '', 16);
         this.encodeString(buffer, 0x1C20, settings.msg3 || '', 16);
 
-        // ===== 0x0CB0: VFO Offsets (from CHIRP) =====
-        this.encodeBCDFrequency(buffer, 0x0CB0, settings.vfoAOffset || 0);
-        this.encodeBCDFrequency(buffer, 0x0CB4, settings.vfoBOffset || 0);
+        // ===== VFO A/B Records (0x1950-0x196F) + Offsets (0x0CB0-0x0CB7) =====
+        if (settings.vfoA) {
+            this.encodeVFO(buffer, 0x1950, 0x0CB0, settings.vfoA);
+        }
+        if (settings.vfoB) {
+            this.encodeVFO(buffer, 0x1960, 0x0CB4, settings.vfoB);
+        }
 
         // ===== 0x0CC0: TX Band Limits (Windows CPS source - BCD big-endian!) =====
         this.encodeBCDBigEndian(buffer, 0x0CC0, settings.txVhfLow || 0);
@@ -1414,14 +1525,6 @@ const BLE = {
 
         // 0x1F2F: Scan Hang Time ((seconds * 2) - 1, range 0-19)
         buffer[0x1F2F] = settings.scanHangTime || 0;
-
-        // ===== VFO A/B Frequencies (0x1950-0x196F) =====
-        // VFO A RX/TX
-        this.encodeBCDFrequency(buffer, 0x1950, settings.vfoARxFreq || 0);
-        this.encodeBCDFrequency(buffer, 0x1954, settings.vfoATxFreq || 0);
-        // VFO B RX/TX
-        this.encodeBCDFrequency(buffer, 0x1960, settings.vfoBRxFreq || 0);
-        this.encodeBCDFrequency(buffer, 0x1964, settings.vfoBTxFreq || 0);
 
         // ===== FM Radio Settings =====
         // 0x1970-0x1971: FM VFO Frequency (16-bit BCD in 0.1MHz)

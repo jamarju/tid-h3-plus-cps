@@ -115,9 +115,25 @@ const Debug = {
         // FM Scan bitmap (0x1940-0x1943)
         { start: 0x1940, end: 0x1943, description: 'FM Scan bitmap: 25 FM channels, 1 bit each (1=on, 0=off)', type: 'bitmap' },
 
-        // VFO A/B frequencies (0x1950-0x196F)
-        { start: 0x1950, end: 0x195F, description: 'VFO A frequency (16 bytes, same structure as channels)', type: 'channel' },
-        { start: 0x1960, end: 0x196F, description: 'VFO B frequency (16 bytes, same structure as channels)', type: 'channel' },
+        // VFO A record (0x1950-0x195F) - similar to channels but byte 14 has offset direction
+        { start: 0x1950, end: 0x1953, description: 'VFO A RX Frequency: 4-byte BCD little-endian (10Hz units)' },
+        { start: 0x1954, end: 0x1957, description: 'VFO A TX Frequency: NOT USED (radio uses RX ± offset)' },
+        { start: 0x1958, end: 0x1959, description: 'VFO A RX Subtone: 16-bit (0x80=DCS, 0x40=inverted)' },
+        { start: 0x195A, end: 0x195B, description: 'VFO A TX Subtone: 16-bit (0x80=DCS, 0x40=inverted)' },
+        { start: 0x195C, end: 0x195C, description: 'VFO A Scramble: 0=off, 1-16=level' },
+        { start: 0x195D, end: 0x195D, description: 'VFO A Flags2: bit2=BusyLock' },
+        { start: 0x195E, end: 0x195E, description: 'VFO A Flags3: bits0-1=OffsetDir(0=off,1=-,2=+), bit3=BW(1=N), bit4=Power(1=H)' },
+        { start: 0x195F, end: 0x195F, description: 'VFO A byte 15: unused (always 0x00)' },
+
+        // VFO B record (0x1960-0x196F) - same structure as VFO A
+        { start: 0x1960, end: 0x1963, description: 'VFO B RX Frequency: 4-byte BCD little-endian (10Hz units)' },
+        { start: 0x1964, end: 0x1967, description: 'VFO B TX Frequency: NOT USED (radio uses RX ± offset)' },
+        { start: 0x1968, end: 0x1969, description: 'VFO B RX Subtone: 16-bit (0x80=DCS, 0x40=inverted)' },
+        { start: 0x196A, end: 0x196B, description: 'VFO B TX Subtone: 16-bit (0x80=DCS, 0x40=inverted)' },
+        { start: 0x196C, end: 0x196C, description: 'VFO B Scramble: 0=off, 1-16=level' },
+        { start: 0x196D, end: 0x196D, description: 'VFO B Flags2: bit2=BusyLock' },
+        { start: 0x196E, end: 0x196E, description: 'VFO B Flags3: bits0-1=OffsetDir(0=off,1=-,2=+), bit3=BW(1=N), bit4=Power(1=H)' },
+        { start: 0x196F, end: 0x196F, description: 'VFO B byte 15: unused (always 0x00)' },
 
         // FM VFO frequency (0x1970-0x1971)
         { start: 0x1970, end: 0x1971, description: 'FM VFO frequency (16-bit BCD in 0.1MHz units)' },
