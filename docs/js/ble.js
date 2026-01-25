@@ -846,11 +846,11 @@ const BLE = {
             // VFO Settings
             activeVfo: data[0x3004] || 0,            // 0x3004: 0=A, 1=B
 
-            // VFO A (0x1950-0x195F) + offset at 0x0CB0
-            vfoA: this.parseVFO(data, 0x1950, 0x0CB0),
+            // VFO A (0x1950-0x195F) + offset at 0x0CB0 + work mode at 0x0CA2 bit 0 + channel at 0x0CA4
+            vfoA: { ...this.parseVFO(data, 0x1950, 0x0CB0), workMode: flags0xCA2 & 0x01, channel: data[0x0CA4] || 1 },
 
-            // VFO B (0x1960-0x196F) + offset at 0x0CB4
-            vfoB: this.parseVFO(data, 0x1960, 0x0CB4),
+            // VFO B (0x1960-0x196F) + offset at 0x0CB4 + work mode at 0x0CA3 bit 0 + channel at 0x0CA5
+            vfoB: { ...this.parseVFO(data, 0x1960, 0x0CB4), workMode: flags0xCA3 & 0x01, channel: data[0x0CA5] || 1 },
 
             // TX Band Limits (0x0CC0-0x0CC7) - Windows CPS source (BCD big-endian!)
             txVhfLow: this.decodeBCDBigEndian(data, 0x0CC0),
@@ -1390,20 +1390,28 @@ const BLE = {
         flags0xCA1 = (flags0xCA1 & ~0xC0) | ((settings.scanMode || 0) << 6);
         buffer[0xCA1] = flags0xCA1;
 
-        // 0xCA2: bit 2=Display Type-A[17], bit 3=FM Interrupt[26], bits 4-5=Tone Burst[24], bit 7=FM Mode
+        // 0xCA2: bit 0=VFO A Work Mode, bit 2=Display Type-A[17], bit 3=FM Interrupt[26], bits 4-5=Tone Burst[24], bit 7=FM Mode
         let flags0xCA2 = buffer[0xCA2] || 0;
+        if (settings.vfoA?.workMode) flags0xCA2 |= 0x01; else flags0xCA2 &= ~0x01;
         flags0xCA2 = (flags0xCA2 & ~0x04) | ((settings.aChannelDisp || 0) << 2);
         if (settings.fmInterrupt) flags0xCA2 |= 0x08; else flags0xCA2 &= ~0x08;
         flags0xCA2 = (flags0xCA2 & ~0x30) | ((settings.toneBurst || 0) << 4);
         if (settings.fmMode) flags0xCA2 |= 0x80; else flags0xCA2 &= ~0x80;
         buffer[0xCA2] = flags0xCA2;
 
-        // 0xCA3: bit 2=Dual Watch[10], bit 4=Display Type-B[18], bits 6-7=Power On Display[14]
+        // 0xCA3: bit 0=VFO B Work Mode, bit 2=Dual Watch[10], bit 4=Display Type-B[18], bits 6-7=Power On Display[14]
         let flags0xCA3 = buffer[0xCA3] || 0;
+        if (settings.vfoB?.workMode) flags0xCA3 |= 0x01; else flags0xCA3 &= ~0x01;
         if (settings.tdr) flags0xCA3 |= 0x04; else flags0xCA3 &= ~0x04;
         flags0xCA3 = (flags0xCA3 & ~0x10) | ((settings.bChannelDisp || 0) << 4);
         flags0xCA3 = (flags0xCA3 & ~0xC0) | ((settings.ponmgs || 0) << 6);
         buffer[0xCA3] = flags0xCA3;
+
+        // 0xCA4: VFO A current channel (1-indexed, same as radio display)
+        buffer[0xCA4] = settings.vfoA?.channel || 1;
+
+        // 0xCA5: VFO B current channel (1-indexed, same as radio display)
+        buffer[0xCA5] = settings.vfoB?.channel || 1;
 
         // 0xCA7: VOX Level [3] (bits 0-2), STUN (bit 3), KILL (bit 4)
         let flags0xCA7 = buffer[0xCA7] || 0;

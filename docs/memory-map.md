@@ -110,15 +110,17 @@ Record layout (offsets are relative to a channel’s base):
 | 0x0CA1 | Keypad beep | 7 | Bit 2: 0=off, 1=on | [1] |
 | 0x0CA1 | Keypad lock | 9 | Bit 4: 0=off, 1=on | [1] |
 | 0x0CA1 | Scan mode |  | Bits 6–7: 0b00=TO, 0b01=CO, 0b10=SE | [1] |
+| 0x0CA2 | VFO A work mode |  | Bit 0: 0=VFO/freq, 1=channel | [1] |
 | 0x0CA2 | Display Type-A | 17 | Bit 2: 0=freq+num, 1=name+num | [1] |
 | 0x0CA2 | FM interrupt | 26 | Bit 3: 0=off, 1=on | [1] |
 | 0x0CA2 | Tone burst | 24 | Bits 4–5: 0=1000Hz, 1=1450Hz, 2=1750Hz, 3=2100Hz | [1] |
 | 0x0CA2 | FM mode |  | Bit 7: 0=VFO, 1=channel | [1] |
+| 0x0CA3 | VFO B work mode |  | Bit 0: 0=VFO/freq, 1=channel | [1] |
 | 0x0CA3 | Dual watch | 10 | Bit 2: 0=off, 1=on | [1] |
 | 0x0CA3 | Display Type-B | 18 | Bit 4: 0=freq+num, 1=name+num | [1] |
 | 0x0CA3 | Power-on display | 14 | Bits 6–7: 0=voltage, 1=message, 2=picture | [1] |
-| 0x0CA4 | VFO A current channel |  | 1 byte: channel index | [1] |
-| 0x0CA5 | VFO B current channel |  | 1 byte: channel index | [1] |
+| 0x0CA4 | VFO A current channel |  | 1 byte: channel number (1-199, 1-indexed) | [1] |
+| 0x0CA5 | VFO B current channel |  | 1 byte: channel number (1-199, 1-indexed) | [1] |
 | 0x0CA6 | (undocumented) |  | Included in the documented VFO state range (0x0CA4–0x0CA6) | [1] |
 | 0x0CA7 | VOX level (+ STUN/KILL flags) | 3 | Bits 0–2: 0=off, 1–5=level; Bit 3: STUN (0=off,1=on); Bit 4: KILL (0=off,1=on) | [1] |
 | 0x0CA8 | Step freq | 2 | Stored in high nibble; values: 0=2.5K, 1=5K, 2=6.25K, 3=10K, 4=12.5K, 5=25K, 6=50K, 7=0.5K, 8=8.33K | [1] |
@@ -221,11 +223,7 @@ This block contains the DTMF/ANI system, plus several bitmaps and VFO-related st
   - Byte 15: length (0–15)
   - If the string is empty, byte 15 is written as 0
   - When parsing, the code uses the length byte and **does not** stop early on `0xFF` (it just skips invalid chars).
-- Windows CPS UI appears to allow entering **16 digits** for at least the group call codes (0x1830–0x18AF). That does not automatically imply the field stores “16 digits in 16 bytes”; there are a few plausible reconciliations:
-  - **CPS truncates to 15 on write** (UI accepts 16, storage does not). In this case the on-disk/memory format can still be 15+length and the 16th digit is silently dropped.
-  - **CPS uses a different length encoding** (e.g. byte 15 = 0x10 for 16 digits, or an off-by-one scheme where 0x0F means 16). This would keep “byte 15 = length” but extend the representable range.
-  - **CPS uses a different layout for this feature** (byte 15 is a 16th digit; length is implicit or stored elsewhere). This would mean `ble.js`’s CHIRP-style encoder/decoder is correct for some cases but not for the CPS 16-digit case.
-  - In any of the non-truncation cases above, the 16-digit behavior is **not supported by the current `ble.js` implementation** (it hard-limits data to 15 digits when `size === 16`).
+- Windows CPS testing indicates the group call codes are also **max 15 digits**, consistent with the 15+length encoding.
 
 **Examples observed while mapping:**
 
@@ -236,11 +234,7 @@ This block contains the DTMF/ANI system, plus several bitmaps and VFO-related st
 - e.g. `"5678"` → `05 06 07 08 FF ... FF 04`
 - e.g. max length: `"9"` + 14 zeros → `09 00 00 ... 00 0F`
 
-Practical note: if you suspect a CPS-written **16-digit** code, dump the 16 bytes and check byte 15:
-
-- If byte 15 equals the digit value (0x00–0x0F), then CPS is using a 16-digit encoding.
-- If byte 15 equals 0x10 (or otherwise exceeds 0x0F), that strongly suggests “byte 15 is length” (not a digit) with an extended/explicit length representation.
-- If byte 15 equals the count (0–15), then it’s the 15+length encoding (possibly with an off-by-one convention).
+Practical note: if you ever see an apparent “16th digit”, it’s likely the length byte being misread as a digit (e.g. 0x0F resembles `#` if interpreted via the DTMF map).
 
 **ANI-Edit special case (3 bytes, no trailing length byte):**
 

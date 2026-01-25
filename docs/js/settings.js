@@ -238,6 +238,8 @@ const Settings = {
 
         // VFO A
         const vfoA = this.settings.vfoA || {};
+        this.setSelectValue('vfoAWorkMode', vfoA.workMode || 0);
+        this.setNumberValue('vfoAChannel', vfoA.channel || 1);
         this.setTextValue('vfoARxFreq', vfoA.rxFreq ? vfoA.rxFreq.toFixed(5) : '');
         this.setTextValue('vfoAOffset', vfoA.offset ? vfoA.offset.toFixed(5) : '');
         this.setSelectValue('vfoAOffsetDir', vfoA.offsetDir || 'OFF');
@@ -250,6 +252,8 @@ const Settings = {
 
         // VFO B
         const vfoB = this.settings.vfoB || {};
+        this.setSelectValue('vfoBWorkMode', vfoB.workMode || 0);
+        this.setNumberValue('vfoBChannel', vfoB.channel || 1);
         this.setTextValue('vfoBRxFreq', vfoB.rxFreq ? vfoB.rxFreq.toFixed(5) : '');
         this.setTextValue('vfoBOffset', vfoB.offset ? vfoB.offset.toFixed(5) : '');
         this.setSelectValue('vfoBOffsetDir', vfoB.offsetDir || 'OFF');
@@ -312,6 +316,16 @@ const Settings = {
      * @param {string} value - Value to set
      */
     setTextValue(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.value = value ?? '';
+    },
+
+    /**
+     * Set number input value
+     * @param {string} id - Element ID
+     * @param {number} value - Value to set
+     */
+    setNumberValue(id, value) {
         const el = document.getElementById(id);
         if (el) el.value = value ?? '';
     },
@@ -390,6 +404,10 @@ const Settings = {
         } else if (el.tagName === 'SELECT') {
             const value = parseInt(el.value);
             this.settings[vfoKey][key] = isNaN(value) ? el.value : value;
+        } else if (el.type === 'number') {
+            // Channel number field
+            const value = parseInt(el.value);
+            this.settings[vfoKey][key] = isNaN(value) ? 1 : value;
         } else if (el.type === 'text') {
             // Frequency/offset fields
             if (key.includes('Freq') || key === 'offset') {

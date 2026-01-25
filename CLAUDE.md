@@ -1,7 +1,7 @@
 # Handoff Document for Tidradio H3 Plus Web CPS
 
-**Last Updated:** January 25, 2026 (Session 20)
-**Status:** Full VFO A/B settings implemented (subtones, bandwidth, power, scramble, offset direction). DCS inverted encoding fixed. Write protocol bug fixed (must always send 32-byte packets). Channel names write range corrected.
+**Last Updated:** January 25, 2026 (Session 21)
+**Status:** VFO work mode (freq/channel) and current channel selection fully implemented. Discovered 0x0CA2 bit 0 = VFO A mode, 0x0CA3 bit 0 = VFO B mode, 0x0CA4/0x0CA5 = current channel (1-indexed).
 
 ---
 
@@ -50,6 +50,46 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 
 ---
 
+## Session 21 - VFO Work Mode & Channel Selection
+
+### VFO Work Mode Discovery
+
+**Via dump comparison (fresh baseline 000, then toggled VFO modes):**
+
+| Address | Bit | Field | Values |
+|---------|-----|-------|--------|
+| 0x0CA2 | 0 | VFO A work mode | 0=Frequency, 1=Channel |
+| 0x0CA3 | 0 | VFO B work mode | 0=Frequency, 1=Channel |
+| 0x0CA4 | - | VFO A current channel | 1-199 (**1-indexed**, not 0-indexed!) |
+| 0x0CA5 | - | VFO B current channel | 1-199 (**1-indexed**, not 0-indexed!) |
+
+**Discovery process:**
+- 001: VFO A freq→ch mode: 0x0CA2 changed 0x25→0x24 (bit 0: 1→0)
+- 002: VFO B freq→ch mode: 0x0CA3 changed 0x50→0x51 (bit 0: 0→1), 0x0CA5 changed (active VFO)
+
+### Channel Index Gotcha
+
+**IMPORTANT:** VFO channel numbers are stored 1-indexed (1-199), NOT 0-indexed!
+- Initially assumed 0-indexed and added +1/-1 adjustments
+- User reported UI showing channel 3 when radio showed channel 2
+- Fixed by removing the adjustments - memory value = display value
+
+### UI Changes
+
+**VFO A and VFO B cards now include:**
+- Work Mode dropdown (Frequency / Channel)
+- Channel number input (1-199) - shown when in Channel mode
+
+### Files Modified
+
+- `docs/js/ble.js`: Added workMode and channel to vfoA/vfoB objects, encoding for 0x0CA2-0x0CA5
+- `docs/js/settings.js`: Added setNumberValue(), handle number inputs in updateVFOField()
+- `docs/js/debug.js`: Updated 0x0CA2/0x0CA3 descriptions to include work mode bit
+- `docs/index.html`: Added Work Mode dropdown and Channel input to VFO A/B cards
+- `docs/memory-map.md`: Added VFO work mode bits, clarified channel is 1-indexed
+
+---
+
 ## Session 20 - VFO Full Implementation & Write Protocol Fixes
 
 ### VFO Discovery (via dump comparison)
@@ -82,49 +122,16 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 - DCS Inverted: high byte = `0xC0 | d2` (e.g., D023I → `23 C0`)
 - 0x80 = DCS marker, 0x40 = inverted flag
 
-### UI Changes
-
-**VFO Settings split into VFO A and VFO B cards:**
-- RX Frequency
-- Offset (MHz)
-- Offset Direction (Off / + / -)
-- RX Subtone (dropdown with CTCSS + DCS-N + DCS-I)
-- TX Subtone (dropdown)
-- Bandwidth (Wide/Narrow)
-- TX Power (Low/High)
-- Scramble (0-16)
-- Busy Lock (checkbox)
-
-**Subtone dropdowns:** Added `DXXXN` (normal) and `DXXXI` (inverted) options to both grid.js and settings.js toneOptions.
-
-**"Only CH Mode" moved** to new "Unknown Settings" card (purpose still unknown).
-
 ### Write Protocol Bug Fixes
 
 **CRITICAL: Write packets must ALWAYS be 32 bytes!**
 - Protocol requires: `W + addrHi + addrLo + 0x20 + data[32] + checksum`
-- Bug: Code was sending variable length at range boundaries (e.g., 16 bytes at 0x0C70)
-- Radio rejected non-32-byte packets and didn't ACK
-- Fix: Always pad to 32 bytes with 0xFF, checksum calculated on all 32 bytes
+- Bug: Code was sending variable length at range boundaries
+- Fix: Always pad to 32 bytes with 0xFF
 
-**WRITE_RANGES_CHANNELS was missing channel names:**
-- Was: `[0x0D40, 0x1000]` = only 88 channel names
-- Now: `[0x0D40, 0x1378]` = all 199 channel names (199 × 8 bytes)
-
-**WRITE_RANGES_SETTINGS was missing VFO records:**
-- Added: `[0x1950, 0x1980]` for VFO A/B + FM VFO
-
-**Variable name bug:** `bytesWritten += len` → `bytesWritten += actualLen` (caused ReferenceError after first chunk)
-
-### Files Modified
-
-- `docs/js/ble.js`: parseVFO(), encodeVFO(), fixed decodeTone/encodeTone for DCS-I, fixed write padding
-- `docs/js/settings.js`: toneOptions array, populateToneSelects(), VFO field handling
-- `docs/js/grid.js`: Added DXXXN/DXXXI to toneOptions
-- `docs/js/debug.js`: Detailed VFO byte annotations
-- `docs/index.html`: VFO A/B cards, subtone dropdowns, Unknown Settings card
-- `docs/memory-map.md`: VFO record structure, DCS encoding documentation
-- `dumps/manifest.txt`: Session 20 VFO discovery summary
+**WRITE_RANGES fixes:**
+- CHANNELS: `[0x0D40, 0x1378]` (was 0x1000, missing channel names)
+- SETTINGS: Added `[0x1950, 0x1980]` for VFO records
 
 ---
 
@@ -132,11 +139,11 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 
 **Packet format:** `W + addrHi + addrLo + 0x20 + data[32] + checksum`
 
-**CRITICAL:** Always send exactly 32 bytes of data. Pad with 0xFF if needed at range boundaries.
+**CRITICAL:** Always send exactly 32 bytes of data. Pad with 0xFF if needed.
 
 **Checksum:** Sum of all 32 data bytes, mod 256
 
-**ACK:** Radio responds with `0x06` after each packet - must wait for it
+**ACK:** Radio responds with `0x06` after each packet
 
 **Write ranges (all 32-byte aligned):**
 
@@ -151,30 +158,29 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 
 ## Remaining Work
 
-1. **Test VFO write roundtrip** - Verify VFO settings write correctly to radio
-2. **Busy lock for VFO** - Assumed at byte 13 bit 2, not yet verified via dump
+1. **Test VFO write roundtrip** - Verify all VFO settings write correctly
+2. **Busy lock for VFO** - Assumed at byte 13 bit 2, not verified
 3. **Firmware Version** - Model "P31183" returned but actual version unknown
 4. **SMS Messages** - Not found in 16KB dump
 5. **Bluetooth Toggle** - Real location unknown (CHIRP/CPS conflicts)
-6. **VFO B TX Frequency Mystery** - Bytes 4-7 may be unused entirely
 
 ## Known Issues & Gotchas
 
+**VFO Channel Numbers:**
+- Stored 1-indexed (1-199), same as radio display
+- DO NOT add/subtract 1 when parsing/encoding
+
 **Write Protocol:**
-- MUST send 32-byte packets - radio ignores/rejects shorter ones
-- All write ranges should be 32-byte aligned for clean operation
+- MUST send 32-byte packets - radio ignores shorter ones
+- All write ranges should be 32-byte aligned
 
 **DCS Encoding:**
 - Use `DXXXN` for normal, `DXXXI` for inverted
-- Legacy `DXXX` format (no suffix) is accepted by encodeTone but decodeTone always returns with suffix
+- 0x80 = DCS marker, 0x40 = inverted flag
 
 **VFO TX Frequency:**
 - VFO records have TX freq bytes (4-7) but radio doesn't use them
-- TX is calculated as RX ± offset based on offset direction
-
-**Channel Names:**
-- 199 names × 8 bytes = 1592 bytes (0x0D40-0x1377)
-- Write range must go to 0x1378+ to include all names
+- TX is calculated as RX ± offset
 
 ---
 
@@ -186,5 +192,3 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 3. Compare: `uv run scripts/dump_memory.py dumps/001_desc.bin dumps/000_baseline.bin`
 4. Review diffs: `0xADDR:0xOLD->0xNEW`
 5. Update `dumps/manifest.txt`
-
-**Session 20 dumps:** 000-006 in `dumps/manifest.txt` documenting VFO discovery (offset direction, bandwidth, power, DCS encoding).

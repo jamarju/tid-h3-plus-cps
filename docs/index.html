@@ -413,6 +413,17 @@
                 <div class="settings-group">
                     <h3>VFO A</h3>
                     <div class="setting-row">
+                        <label for="vfoAWorkMode" title="VFO A mode: Frequency (VFO) or Channel memory">Work Mode</label>
+                        <select id="vfoAWorkMode">
+                            <option value="0">Frequency</option>
+                            <option value="1">Channel</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoAChannel" title="Channel number when in Channel mode (1-199)">Channel</label>
+                        <input type="number" id="vfoAChannel" min="1" max="199" value="1">
+                    </div>
+                    <div class="setting-row">
                         <label for="vfoARxFreq" title="VFO A receive frequency in MHz">RX Frequency</label>
                         <input type="text" id="vfoARxFreq" class="text-input" placeholder="446.00625">
                     </div>
@@ -480,6 +491,17 @@
 
                 <div class="settings-group">
                     <h3>VFO B</h3>
+                    <div class="setting-row">
+                        <label for="vfoBWorkMode" title="VFO B mode: Frequency (VFO) or Channel memory">Work Mode</label>
+                        <select id="vfoBWorkMode">
+                            <option value="0">Frequency</option>
+                            <option value="1">Channel</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoBChannel" title="Channel number when in Channel mode (1-199)">Channel</label>
+                        <input type="number" id="vfoBChannel" min="1" max="199" value="1">
+                    </div>
                     <div class="setting-row">
                         <label for="vfoBRxFreq" title="VFO B receive frequency in MHz">RX Frequency</label>
                         <input type="text" id="vfoBRxFreq" class="text-input" placeholder="446.09375">

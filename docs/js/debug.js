@@ -49,8 +49,8 @@ const Debug = {
         // Main settings packed bytes (0x0CA0-0x0CAF)
         { start: 0x0CA0, end: 0x0CA0, description: 'Flags: bit1=DTMFST[19], bit4=Unknown (Win CPS flips NORMAL→HAM), bit6=DispLCD(RX), bit7=DispLCD(TX)' },
         { start: 0x0CA1, end: 0x0CA1, description: 'Flags: bit0=Voice[11], bit2=Beep[7], bit4=KeyLock[9], bit6-7=ScanMode (0=TO,1=CO,2=SE)' },
-        { start: 0x0CA2, end: 0x0CA2, description: 'Flags: bit2=DispA[17], bit3=FMInt[26], bit4-5=ToneBurst[24], bit7=FMMode (0=VFO,1=CH)' },
-        { start: 0x0CA3, end: 0x0CA3, description: 'Flags: bit2=DualWatch[10], bit4=DispB[18], bit6-7=PONMGS[14] (0=voltage,1=msg,2=pic)' },
+        { start: 0x0CA2, end: 0x0CA2, description: 'Flags: bit0=VFO-A WorkMode (0=freq,1=ch), bit2=DispA[17], bit3=FMInt[26], bit4-5=ToneBurst[24], bit7=FMMode (0=VFO,1=CH)' },
+        { start: 0x0CA3, end: 0x0CA3, description: 'Flags: bit0=VFO-B WorkMode (0=freq,1=ch), bit2=DualWatch[10], bit4=DispB[18], bit6-7=PONMGS[14] (0=voltage,1=msg,2=pic)' },
         { start: 0x0CA4, end: 0x0CA4, description: 'VFO A current channel' },
         { start: 0x0CA5, end: 0x0CA5, description: 'VFO B current channel' },
         { start: 0x0CA6, end: 0x0CA6, description: '(undocumented) - in VFO state range but purpose unknown' },
