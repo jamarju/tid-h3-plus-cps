@@ -1,7 +1,7 @@
 # Handoff Document for Tidradio H3 Plus Web CPS
 
-**Last Updated:** January 25, 2026 (Session 18)
-**Status:** Complete DTMF/ANI system implemented and verified! All features from CHIRP driver now working: Stun/Kill codes, 8 group call codes, BOT/EOT PTT ID sequences, VFO offsets, repeater tail, TX band limits, password location. Roundtrip test PASSED (bit-perfect except password). Dump management system established with manifest tracking.
+**Last Updated:** January 25, 2026 (Session 19)
+**Status:** Channel validity bitmap now honored during parsing - invalid channels display as empty rows. New "Only CH Mode" setting discovered from Windows CPS. Debug.js and memory-map.md fully synchronized.
 
 ---
 
@@ -67,6 +67,45 @@ Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth. Pure HTML+CSS+JS, 
 - This tracks which settings affect which memory locations for discovery
 - To take baseline: `uv run dump_memory.py dumps/000_baseline.bin`
 - To compare: `uv run dump_memory.py dumps/001_new.bin dumps/000_baseline.bin`
+
+---
+
+## Session 19 - Channel Validity Bitmap & Empty Channel UX
+
+**Channel Validity Bitmap (0x1900) Now Honored During Parsing:**
+- Previously: `parseChannel()` only checked if bytes were 0xFF to determine "empty"
+- Problem: After factory reset, stale frequency data remained but validity bitmap said invalid
+- Fix: `parseChannel()` now reads 0x1900 bitmap first - if bit=0, returns empty channel via `getEmptyChannel()`
+- Empty channels display as faded rows (50% opacity) with only RX/TX freq editable
+
+**Empty Channel UX in grid.js:**
+- Empty rows get `.empty-channel` CSS class (faded appearance)
+- Non-frequency cells get `.disabled` class (not editable, shows blank)
+- Auto-populate: Enter RX freq on empty row → TX freq copies from RX, all fields become editable
+- Auto-clear: Delete RX freq → entire channel cleared, row goes empty
+- Both Delete key and edit-then-clear trigger the same logic via `handleFrequencyEdit()`
+
+**New Setting Discovered: Only CH Mode (0x0CAF bit 7):**
+- Found via Windows CPS checkbox "Only CH Mode"
+- 0x0CAF changed from 0x01 to 0x81 when checked
+- Breath LED now uses bits 4-6 only (was 4-7)
+- Purpose unknown - testing shows VFO mode still works when enabled
+- Added to UI in LED section with explanatory tooltip
+
+**Debug.js Fixes:**
+- Fixed bitmap label bug: 0x1900 was showing "Scan bitmap" instead of "Channel Valid bitmap"
+- Now correctly identifies three bitmap regions with proper labels and channel ranges
+- Added missing 0x0CA6 entry (undocumented byte in VFO state range)
+- Verified all entries match memory-map.md
+
+**Files Modified:**
+- `docs/js/ble.js`: Added `getEmptyChannel()`, validity bitmap check in `parseChannel()`, `onlyChMode` parse/encode
+- `docs/js/grid.js`: Empty row styling, disabled cells, `handleFrequencyEdit()`, `clearChannelData()`, `populateChannelDefaults()`
+- `docs/css/style.css`: `.empty-channel` and `.cell.disabled` styles
+- `docs/js/debug.js`: Fixed bitmap labels, added 0x0CA6
+- `docs/index.html`: Added Only CH Mode checkbox
+- `docs/js/settings.js`: Added `onlyChMode` checkbox handling
+- `docs/memory-map.md`: Updated 0x0CAF to show bit 7 = Only CH Mode
 
 ---
 
@@ -259,7 +298,7 @@ After factory reset, radio got stuck on CH1 - couldn't cycle to other channels w
 - Auto-focus first cell on data load
 
 **Memory Map Updates:**
-- `js/debug.js`: Added scan settings, FM VFO, updated bitfield descriptions
+- `docs/js/debug.js`: Added scan settings, FM VFO, updated bitfield descriptions
 - All new settings properly color-coded in hex dump
 
 **Code Organization:**
@@ -316,7 +355,7 @@ After factory reset, radio got stuck on CH1 - couldn't cycle to other channels w
 - Changed from 1→0 in bad file but didn't affect the stuck-on-CH1 bug
 - Located between VFO channel selectors (0x0CA4-0x0CA5) and VOX level (0x0CA7)
 - Purpose unknown - needs further investigation
-- Shows red in Debug tab (unknown)
+- Now shows green in Debug tab (documented as unknown but tracked)
 
 **Grid Navigation:**
 - Delete key now clears cells in both Channels and FM grids

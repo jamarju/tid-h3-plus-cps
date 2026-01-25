@@ -83,6 +83,12 @@ const Grid = {
             const tr = document.createElement('tr');
             tr.dataset.channel = channel.channel;
 
+            // Mark row as empty if no RX frequency
+            const isEmpty = channel.rxFreq === 0;
+            if (isEmpty) {
+                tr.classList.add('empty-channel');
+            }
+
             for (let colIdx = 0; colIdx < this.columns.length; colIdx++) {
                 const col = this.columns[colIdx];
                 const td = document.createElement('td');
@@ -97,6 +103,11 @@ const Grid = {
                 if (col.type === 'readonly') {
                     cell.classList.add('readonly');
                     cell.textContent = channel[col.key];
+                } else if (isEmpty && col.key !== 'rxFreq' && col.key !== 'txFreq') {
+                    // Empty channel - only allow frequency editing
+                    cell.classList.add('editable', 'disabled');
+                    cell.tabIndex = 0;
+                    cell.textContent = '';
                 } else {
                     cell.classList.add('editable');
                     cell.tabIndex = 0;
@@ -145,7 +156,7 @@ const Grid = {
         // Click to focus (or toggle boolean cells)
         grid.addEventListener('click', (e) => {
             const cell = e.target.closest('.cell.editable');
-            if (!cell) return;
+            if (!cell || cell.classList.contains('disabled')) return;
 
             // Don't handle clicks on inputs/selects when editing
             if (this.editingCell && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) {
@@ -176,7 +187,7 @@ const Grid = {
         // Double-click to edit
         grid.addEventListener('dblclick', (e) => {
             const cell = e.target.closest('.cell.editable');
-            if (!cell) return;
+            if (!cell || cell.classList.contains('disabled')) return;
 
             // Don't re-edit if already editing this cell
             if (this.editingCell === cell) return;
@@ -250,6 +261,9 @@ const Grid = {
      * @param {HTMLElement} cell - Cell element
      */
     startEditing(cell) {
+        // Don't edit disabled cells
+        if (cell.classList.contains('disabled')) return;
+
         if (this.editingCell) {
             this.stopEditing(false);
         }
@@ -373,6 +387,9 @@ const Grid = {
         const col = this.columns[colIdx];
         const channel = this.channels[row - 1];
 
+        // Capture empty state BEFORE saving new value
+        const wasEmpty = channel.rxFreq === 0 && channel.txFreq === 0;
+
         if (save) {
             const rawValue = input.value;
             let newValue;
@@ -394,6 +411,18 @@ const Grid = {
             }
 
             channel[col.key] = newValue;
+
+            // Handle frequency field edits - auto-populate defaults
+            if (col.key === 'rxFreq' || col.key === 'txFreq') {
+                const needsRerender = this.handleFrequencyEdit(channel, col.key, wasEmpty);
+                if (needsRerender) {
+                    this.editingCell = null;
+                    this.render();
+                    // Focus the RX freq column on the same row after clearing
+                    this.moveTo(row, 1);
+                    return; // Early return since render() clears editingCell
+                }
+            }
         }
 
         cell.classList.remove('editing');
@@ -425,6 +454,78 @@ const Grid = {
                 this.moveToCell(e.shiftKey ? -1 : 1, 0);
                 break;
         }
+    },
+
+    /**
+     * Handle frequency field edit - auto-populate or clear channel
+     * @param {Object} channel - Channel data
+     * @param {string} editedKey - 'rxFreq' or 'txFreq'
+     * @param {boolean} wasEmpty - Whether channel was empty before edit
+     * @returns {boolean} True if re-render needed
+     */
+    handleFrequencyEdit(channel, editedKey, wasEmpty) {
+        const rxFreq = channel.rxFreq;
+        const txFreq = channel.txFreq;
+
+        if (editedKey === 'rxFreq') {
+            if (rxFreq > 0 && txFreq === 0) {
+                // RX entered, TX empty → copy RX to TX
+                channel.txFreq = rxFreq;
+            }
+            if (rxFreq === 0) {
+                // RX cleared → clear entire channel
+                this.clearChannelData(channel);
+                return true; // needs re-render
+            }
+            if (wasEmpty && rxFreq > 0) {
+                // Was empty, now has RX → populate defaults
+                this.populateChannelDefaults(channel);
+                return true; // needs re-render
+            }
+        }
+
+        if (editedKey === 'txFreq') {
+            if (txFreq > 0 && rxFreq === 0) {
+                // TX entered, RX empty → copy TX to RX (makes channel valid)
+                channel.rxFreq = txFreq;
+                this.populateChannelDefaults(channel);
+                return true; // needs re-render
+            }
+            // TX cleared alone: just leave it cleared, channel still valid if RX > 0
+        }
+
+        return false; // no re-render needed
+    },
+
+    /**
+     * Populate default values for a new channel
+     * @param {Object} channel - Channel data
+     */
+    populateChannelDefaults(channel) {
+        // TX freq defaults to RX freq (no offset) if not already set
+        if (channel.txFreq === 0) {
+            channel.txFreq = channel.rxFreq;
+        }
+        // Other defaults are already set from getEmptyChannel() or should remain
+    },
+
+    /**
+     * Clear all channel data (reset to empty)
+     * @param {Object} channel - Channel data
+     */
+    clearChannelData(channel) {
+        channel.rxFreq = 0;
+        channel.txFreq = 0;
+        channel.frequencyHop = false;
+        channel.decode = 'OFF';
+        channel.encode = 'OFF';
+        channel.txPower = 'HIGH';
+        channel.bandwidth = 'W';
+        channel.busyLock = false;
+        channel.pttId = 'OFF';
+        channel.scanAdd = true;
+        channel.name = '';
+        channel.scramble = 0;
     },
 
     /**
@@ -548,6 +649,9 @@ const Grid = {
         const col = this.columns[colIdx];
         const channel = this.channels[row - 1];
 
+        // Capture state before clearing
+        const wasEmpty = channel.rxFreq === 0 && channel.txFreq === 0;
+
         switch (col.type) {
             case 'frequency':
                 channel[col.key] = 0;
@@ -569,6 +673,16 @@ const Grid = {
             case 'tone':
                 channel[col.key] = 'OFF';
                 break;
+        }
+
+        // Handle frequency clearing - may need to clear entire channel
+        if (col.key === 'rxFreq' || col.key === 'txFreq') {
+            const needsRerender = this.handleFrequencyEdit(channel, col.key, wasEmpty);
+            if (needsRerender) {
+                this.render();
+                this.moveTo(row, colIdx);
+                return;
+            }
         }
 
         this.focusedCell.textContent = this.formatCellValue(channel[col.key], col);

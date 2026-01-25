@@ -421,6 +421,29 @@ const BLE = {
     },
 
     /**
+     * Get an empty channel object with defaults
+     * @param {number} channelNum - Channel number (1-199)
+     * @returns {Object} Empty channel object
+     */
+    getEmptyChannel(channelNum) {
+        return {
+            channel: channelNum,
+            rxFreq: 0,
+            txFreq: 0,
+            frequencyHop: false,
+            decode: 'OFF',
+            encode: 'OFF',
+            txPower: 'HIGH',
+            bandwidth: 'W',
+            busyLock: false,
+            pttId: 'OFF',
+            scanAdd: true,
+            name: '',
+            scramble: 0
+        };
+    },
+
+    /**
      * Parse a single channel from memory (16 bytes per channel)
      * @param {Uint8Array} data - Raw memory
      * @param {number} offset - Channel data offset
@@ -429,7 +452,18 @@ const BLE = {
      * @returns {Object} Channel object
      */
     parseChannel(data, offset, nameOffset, channelNum) {
-        // Check if channel is empty (all 0xFF)
+        // Check validity bitmap at 0x1900 (1 bit per channel)
+        // Radio only allows cycling to channels with bit=1 in this bitmap
+        const validByteOffset = 0x1900 + Math.floor((channelNum - 1) / 8);
+        const validBitMask = 1 << ((channelNum - 1) % 8);
+        const isValid = !!(data[validByteOffset] & validBitMask);
+
+        // If channel is marked invalid in bitmap, return empty channel
+        if (!isValid) {
+            return this.getEmptyChannel(channelNum);
+        }
+
+        // Check if channel data is empty (all 0xFF) - for files without validity bitmap
         const isEmpty = data[offset] === 0xFF && data[offset + 1] === 0xFF;
 
         // Frequency stored as little-endian BCD (4 bytes)
@@ -709,8 +743,10 @@ const BLE = {
             // [30] PF2 Long Press - 0xC95: same as PF1 Long
             longKeyPf2: data[0xC95] || 0,
 
-            // [32] Breath LED - 0xCAF upper nibble: 0=off, 1=5s, 2=10s, 3=15s, 4=30s
-            breathLed: (data[0xCAF] >> 4) & 0x0F,
+            // [32] Breath LED - 0xCAF bits 4-6: 0=off, 1=5s, 2=10s, 3=15s, 4=30s
+            breathLed: (data[0xCAF] >> 4) & 0x07,
+            // Only CH Mode - 0xCAF bit 7: purpose unknown (Windows CPS setting)
+            onlyChMode: !!(data[0xCAF] & 0x80),
 
             // [33] MIC Gain - 0x1F20: 0-9
             micGain: data[0x1F20] || 0,
@@ -1297,10 +1333,11 @@ const BLE = {
         // 0xCAE: VOX Delay [4]
         buffer[0xCAE] = settings.voxDelay || 0;
 
-        // 0xCAF: upper nibble = Breath LED [32], bit 1 = AM Band
+        // 0xCAF: bits 4-6 = Breath LED [32], bit 1 = AM Band, bit 7 = Only CH Mode
         let flags0xCAF = buffer[0xCAF] || 0;
-        flags0xCAF = (flags0xCAF & 0x0F) | ((settings.breathLed || 0) << 4);
+        flags0xCAF = (flags0xCAF & 0x8F) | (((settings.breathLed || 0) & 0x07) << 4);  // bits 4-6 only
         if (settings.amBand) flags0xCAF |= 0x02; else flags0xCAF &= ~0x02;
+        if (settings.onlyChMode) flags0xCAF |= 0x80; else flags0xCAF &= ~0x80;
         buffer[0xCAF] = flags0xCAF;
 
         // ===== 0x1820: ANI-Edit [16] =====

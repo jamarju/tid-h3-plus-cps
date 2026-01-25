@@ -152,8 +152,9 @@ const Settings = {
         // Checkboxes - Scan
         this.setCheckboxValue('tdr', this.settings.tdr);
 
-        // Checkboxes - AM Band
+        // Checkboxes - AM Band / Only CH Mode
         this.setCheckboxValue('amBand', this.settings.amBand);
+        this.setCheckboxValue('onlyChMode', this.settings.onlyChMode);
 
         // Checkboxes - Security
         this.setCheckboxValue('stun', this.settings.stun);

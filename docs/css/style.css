@@ -340,6 +340,26 @@ body {
     background: var(--bg-selected);
 }
 
+/* Empty channel rows */
+.channel-grid tr.empty-channel td {
+    opacity: 0.5;
+}
+
+.channel-grid tr.empty-channel:hover td {
+    opacity: 1;
+}
+
+/* Disabled cells in empty channels */
+.cell.disabled {
+    background: transparent;
+    cursor: not-allowed;
+    color: var(--text-muted);
+}
+
+.cell.disabled:hover {
+    background: transparent;
+}
+
 /* Column widths */
 .col-ch { width: 45px; text-align: center; }
 .col-rxfreq, .col-txfreq { width: 95px; }

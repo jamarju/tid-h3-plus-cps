@@ -53,6 +53,7 @@ const Debug = {
         { start: 0x0CA3, end: 0x0CA3, description: 'Flags: bit2=DualWatch[10], bit4=DispB[18], bit6-7=PONMGS[14] (0=voltage,1=msg,2=pic)' },
         { start: 0x0CA4, end: 0x0CA4, description: 'VFO A current channel' },
         { start: 0x0CA5, end: 0x0CA5, description: 'VFO B current channel' },
+        { start: 0x0CA6, end: 0x0CA6, description: '(undocumented) - in VFO state range but purpose unknown' },
         { start: 0x0CA7, end: 0x0CA7, description: 'Flags: bit0-2=VOXLevel[3] (0=off,1-5=level), bit3=STUN, bit4=KILL' },
         { start: 0x0CA8, end: 0x0CA8, description: 'Step Freq [2]: upper nibble (0-8)' },
         { start: 0x0CA9, end: 0x0CA9, description: 'Squelch Level [1]: 0=off, 1-9=level' },
@@ -61,7 +62,7 @@ const Debug = {
         { start: 0x0CAC, end: 0x0CAC, description: 'Power Save [8]: 0=off, 1-4=level' },
         { start: 0x0CAD, end: 0x0CAD, description: 'Backlight [12]: 0=always, 1=5s ... 4=30s' },
         { start: 0x0CAE, end: 0x0CAE, description: 'VOX Delay [4]: 0=1s, 1=2s, 2=3s' },
-        { start: 0x0CAF, end: 0x0CAF, description: 'Flags: bit1=AM_BAND, bit4-7=BreathLED[32] (0=off,1=5s,2=10s,3=15s,4=30s)' },
+        { start: 0x0CAF, end: 0x0CAF, description: 'Flags: bit1=AM_BAND, bit4-6=BreathLED[32] (0=off,1=5s,2=10s,3=15s,4=30s), bit7=OnlyCHMode (purpose unknown)' },
 
         // VFO Offset Frequencies (0x0CB0-0x0CB7) - discovered from CHIRP
         { start: 0x0CB0, end: 0x0CB3, description: 'VFO A Offset Frequency: 4-byte BCD little-endian (10Hz units)' },
@@ -210,12 +211,27 @@ const Debug = {
                     desc = `CH${chNum} name char ${charIdx}`;
                 }
 
-                // For scan bitmap
+                // For bitmaps - handle each type separately
                 if (entry.type === 'bitmap') {
-                    const byteIdx = addr - 0x1920;
-                    const startCh = byteIdx * 8 + 1;
-                    const endCh = Math.min(startCh + 7, 199);
-                    desc = `Scan bitmap: CH${startCh}-${endCh}`;
+                    if (addr >= 0x1900 && addr <= 0x1918) {
+                        // Channel Valid bitmap
+                        const byteIdx = addr - 0x1900;
+                        const startCh = byteIdx * 8 + 1;
+                        const endCh = Math.min(startCh + 7, 199);
+                        desc = `Channel Valid bitmap: CH${startCh}-${endCh} (1=valid, 0=empty)`;
+                    } else if (addr >= 0x1920 && addr <= 0x1938) {
+                        // Scan bitmap
+                        const byteIdx = addr - 0x1920;
+                        const startCh = byteIdx * 8 + 1;
+                        const endCh = Math.min(startCh + 7, 199);
+                        desc = `Scan bitmap: CH${startCh}-${endCh} (1=scan on, 0=off)`;
+                    } else if (addr >= 0x1940 && addr <= 0x1943) {
+                        // FM Scan bitmap
+                        const byteIdx = addr - 0x1940;
+                        const startCh = byteIdx * 8 + 1;
+                        const endCh = Math.min(startCh + 7, 25);
+                        desc = `FM Scan bitmap: FM CH${startCh}-${endCh}`;
+                    }
                 }
 
                 this.lookupTable.set(addr, desc);
