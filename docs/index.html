@@ -57,6 +57,7 @@
                             <th class="col-encode" data-tip="TX CTCSS/DCS tone - transmits this tone so others with matching Decode can hear you">Encode(TX)</th>
                             <th class="col-power" data-tip="Transmit power: LOW (~1W) for short range/battery saving, HIGH (~5W) for longer range">Power</th>
                             <th class="col-bw" data-tip="Bandwidth: N=Narrow (12.5kHz) for digital/PMR446, W=Wide (25kHz) for analog amateur">BW</th>
+                            <th class="col-mod" data-tip="Modulation: FM for most use, AM for airband (118-136 MHz)">Mod</th>
                             <th class="col-busy" data-tip="Busy Channel Lockout - prevents transmitting when channel is in use">Busy</th>
                             <th class="col-pttid" data-tip="PTT ID - sends DTMF identification when you press/release PTT">PTT ID</th>
                             <th class="col-scan" data-tip="Include this channel in scan list when scanning">Scan</th>
@@ -306,13 +307,7 @@
                             <option value="9">1000ms</option>
                         </select>
                     </div>
-                    <div class="setting-row">
-                        <label for="modulation" title="Modulation type: FM for most amateur/PMR use, AM for airband receive"><span class="setting-index">38</span> Modulation</label>
-                        <select id="modulation">
-                            <option value="0">FM</option>
-                            <option value="1">AM</option>
-                        </select>
-                    </div>
+                    <!-- [38] Modulation is per-VFO, see VFO A/B sections below -->
                     <div class="setting-row">
                         <label for="tx200" title="Enable transmit in 200MHz band (220-225MHz amateur band). Check your license!"><span class="setting-index">39</span> 200Tx</label>
                         <input type="checkbox" id="tx200">
@@ -487,6 +482,13 @@
                         <label for="vfoABusyLock" title="Block transmit when channel is busy">Busy Lock</label>
                         <input type="checkbox" id="vfoABusyLock">
                     </div>
+                    <div class="setting-row">
+                        <label for="vfoAModulation" title="[38] Modulation type: FM for most amateur/PMR use, AM for airband receive">Modulation</label>
+                        <select id="vfoAModulation">
+                            <option value="0">FM</option>
+                            <option value="1">AM</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="settings-group">
@@ -565,6 +567,13 @@
                     <div class="setting-row">
                         <label for="vfoBBusyLock" title="Block transmit when channel is busy">Busy Lock</label>
                         <input type="checkbox" id="vfoBBusyLock">
+                    </div>
+                    <div class="setting-row">
+                        <label for="vfoBModulation" title="[38] Modulation type: FM for most amateur/PMR use, AM for airband receive">Modulation</label>
+                        <select id="vfoBModulation">
+                            <option value="0">FM</option>
+                            <option value="1">AM</option>
+                        </select>
                     </div>
                 </div>
 
@@ -759,10 +768,6 @@
                             <option value="3">15s</option>
                             <option value="4">30s</option>
                         </select>
-                    </div>
-                    <div class="setting-row">
-                        <label for="amBand" title="Enable AM band reception for commercial AM radio">AM Band</label>
-                        <input type="checkbox" id="amBand">
                     </div>
                 </div>
 

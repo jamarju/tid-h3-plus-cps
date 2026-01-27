@@ -1,6 +1,6 @@
 # Tidradio H3 Plus Web CPS
 
-Web-based Bluetooth Low Energy (BLE) Customer Programming Software (CPS) for the Tidradio H3 Plus radio.
+Web-based CPS for Tidradio H3 Plus radio using Web Bluetooth written in pure HTML+CSS+JS, runs in your browser.
 
 **[Launch App](https://jamarju.github.io/tid-h3-plus-cps/)**
 
@@ -29,11 +29,6 @@ Web-based Bluetooth Low Energy (BLE) Customer Programming Software (CPS) for the
 Configurations are saved as `.h3p` files - raw 16KB binary dumps of radio memory. This preserves all data including unknown fields for future compatibility.
 
 ## Development
-
-```bash
-python -m http.server 8000
-# Open http://localhost:8000
-```
 
 See [docs/](docs/) for memory maps and protocol documentation.
 

@@ -29,11 +29,17 @@ Status notes:
 
 | Offset | Setting | Menu # | Encoding | Source |
 |--------|---------|--------|----------|--------|
-| 0x001F | Modulation | 38 | 0=fm, 1=am | [1] |
+| 0x001F | ~~Modulation~~ | 38 | **WRONG** - this is Channel 2 data, NOT modulation | [1] |
 
-### 0x001F - Modulation
+### 0x001F - NOT Modulation (Corrected Session 19)
 
-This offset is documented as a global menu setting. Note: if channel 1 truly starts at 0x0010 (16-byte records), then 0x001F would also be the last byte of CH1, so this mapping may need reconciliation.
+**CORRECTION:** This offset was incorrectly documented as the global Modulation setting. In reality:
+- Channels start at 0x0008 (not 0x0010), with 16 bytes per channel
+- 0x001F falls within Channel 2 (0x0018-0x0027), byte 7
+- **Real modulation location:** Per-VFO at byte 15 of each VFO record:
+  - VFO A: **0x195F** (0=FM, 1=AM)
+  - VFO B: **0x196F** (0=FM, 1=AM)
+- The radio's menu [38] Modulation setting updates the current VFO's modulation byte
 
 ## Channels area (0x0010–0x0C7F)
 
@@ -58,7 +64,7 @@ Record layout (offsets are relative to a channel’s base):
 | 0x0C | 1 | Scramble level | 0=off, 1–16=level (direct value, not a bitfield) |
 | 0x0D | 1 | Flags 2 | See below |
 | 0x0E | 1 | Flags 3 | See below |
-| 0x0F | 1 | Unknown | Usually 0x00 |
+| 0x0F | 1 | **Modulation** | 0=FM, 1=AM (discovered Session 19) |
 
 **Flags 2 (byte 0x0D):**
 
@@ -158,6 +164,8 @@ CHIRP driver notes suggest different bit positions for some functions (e.g. FM m
 - Stored (little-endian): `00 00 50 00`
 
 These offsets work with the offset direction flags in the VFO A/B structures (channel-like records).
+
+VFO records have TX freq bytes (4-7) but radio doesn't use them. Instead, TX is calculated as RX ± offset.
 
 ### 0x0CC0–0x0CC7 - Band limit values by radio mode
 
@@ -313,7 +321,7 @@ VFO A (0x1950-0x195F) and VFO B (0x1960-0x196F) use a 16-byte structure similar 
 | 0x0C | 1 | Scramble level | 0=off, 1–16=level |
 | 0x0D | 1 | Flags 2 | Bit 2: Busy lock (assumed same as channels) |
 | 0x0E | 1 | Flags 3 | **VFO-specific** - see below |
-| 0x0F | 1 | Unknown | Always 0x00 |
+| 0x0F | 1 | **Modulation [38]** | 0=FM, 1=AM (discovered Session 19) |
 
 **Flags 3 (byte 0x0E) - VFO-specific encoding:**
 

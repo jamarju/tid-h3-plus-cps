@@ -19,6 +19,7 @@ const Grid = {
         { key: 'encode', label: 'Encode(TX)', type: 'tone', class: 'col-encode' },
         { key: 'txPower', label: 'Power', type: 'select', options: ['LOW', 'HIGH'], class: 'col-power' },
         { key: 'bandwidth', label: 'BW', type: 'select', options: ['N', 'W'], class: 'col-bw' },
+        { key: 'modulation', label: 'Mod', type: 'select', options: ['FM', 'AM'], class: 'col-mod' },
         { key: 'busyLock', label: 'Busy', type: 'boolean', class: 'col-busy' },
         { key: 'pttId', label: 'PTT ID', type: 'select', options: ['OFF', 'BOT', 'EOT', 'BOTH'], class: 'col-pttid' },
         { key: 'scanAdd', label: 'Scan', type: 'boolean', class: 'col-scan' },
@@ -524,6 +525,7 @@ const Grid = {
         channel.encode = 'OFF';
         channel.txPower = 'HIGH';
         channel.bandwidth = 'W';
+        channel.modulation = 'FM';
         channel.busyLock = false;
         channel.pttId = 'OFF';
         channel.scanAdd = true;

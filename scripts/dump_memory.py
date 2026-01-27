@@ -27,12 +27,12 @@ MEMORY_START = 0x0000
 MEMORY_END = 0x4000  # 16KB
 CHUNK_SIZE = 32
 
-# Memory ranges to read (skip channels and empty regions for reverse engineering)
+# Memory ranges to read (skip most channels and empty regions for reverse engineering)
 READ_RANGES = [
-    (0x0000, 0x01A0),  # Header area
+    (0x0000, 0x0340),  # Header + channels 1-50 (ch50 at ~0x0318)
     (0x0C90, 0x1F40),  # Settings, names, ANI, scan bitmap, VFO, startup msgs
     (0x3000, 0x3120),  # Extended settings
-    # Skip: 0x01A0-0x0C90 (channels - visible in web UI)
+    # Skip: 0x0340-0x0C90 (channels 51-199)
     # Skip: 0x1F40-0x3000 (all 0xFF)
     # Skip: 0x3120-0x4000 (all 0xFF)
 ]
@@ -130,14 +130,6 @@ class H3PlusDumper:
         total_bytes = sum(end - start for start, end in READ_RANGES)
         total_chunks = total_bytes // CHUNK_SIZE
 
-        if self.baseline:
-            stop_msg = f"stop after {self.stop_after} mismatch{'es' if self.stop_after != 1 else ''}" if self.stop_after else "show all diffs"
-            print(f"Reading {total_bytes}/{MEMORY_END} bytes (comparing with baseline, {stop_msg})...")
-        else:
-            print(f"Reading {total_bytes}/{MEMORY_END} bytes in {CHUNK_SIZE}-byte chunks...")
-        print(f"(Skipping {MEMORY_END - total_bytes} bytes of empty 0xFF regions)")
-
-        chunk_count = 0
         should_stop = False
 
         for range_start, range_end in READ_RANGES:
@@ -154,7 +146,7 @@ class H3PlusDumper:
                         byte_addr = addr + offset
                         if chunk[offset] != self.baseline[byte_addr]:
                             self.diffs_found.append((byte_addr, self.baseline[byte_addr], chunk[offset]))
-                            print(f"\n0x{byte_addr:04X}:0x{self.baseline[byte_addr]:02X}->0x{chunk[offset]:02X}")
+                            print(f"0x{byte_addr:04X}:0x{self.baseline[byte_addr]:02X}->0x{chunk[offset]:02X}")
 
                             # Check if we should stop
                             if self.stop_after and len(self.diffs_found) >= self.stop_after:
@@ -162,25 +154,12 @@ class H3PlusDumper:
                                 break
 
                     if should_stop:
-                        print(f"\nStopped after {len(self.diffs_found)} mismatch{'es' if len(self.diffs_found) > 1 else ''}.")
                         break
-
-                chunk_count += 1
-                print(".", end="", flush=True)
-                if chunk_count % 50 == 0:
-                    print(f" {chunk_count}/{total_chunks}", flush=True)
 
                 await asyncio.sleep(0.03)  # Small delay between reads
 
-        print()  # Newline after progress
-
-        if self.baseline:
-            if not self.diffs_found:
-                print("No differences found! Memory matches baseline.")
-            else:
-                print(f"\nTotal differences found: {len(self.diffs_found)}")
-        else:
-            print("Memory dump complete!")
+        if self.baseline and not self.diffs_found:
+            print("No differences found.")
 
         return bytes(self.memory)
 

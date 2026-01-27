@@ -363,7 +363,7 @@ body {
 /* Column widths */
 .col-ch { width: 45px; text-align: center; }
 .col-rxfreq, .col-txfreq { width: 95px; }
-.col-hop, .col-power, .col-bw, .col-busy, .col-pttid, .col-scan, .col-scramble { width: 55px; }
+.col-hop, .col-power, .col-bw, .col-mod, .col-busy, .col-pttid, .col-scan, .col-scramble { width: 55px; }
 .col-decode, .col-encode { width: 100px; }
 .col-name { width: 90px; }
 

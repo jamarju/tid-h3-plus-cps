@@ -15,7 +15,7 @@ const Debug = {
      */
     memoryMap: [
         // Early settings
-        { start: 0x001F, end: 0x001F, description: 'Modulation [38]: 0=FM, 1=AM' },
+        { start: 0x001F, end: 0x001F, description: 'Channel 2 data (NOT modulation - see VFO 0x195F/0x196F)' },
 
         // Channels (0x0010 - 0x0C7F): 199 channels × 16 bytes
         ...Array.from({ length: 199 }, (_, i) => ({
@@ -31,7 +31,7 @@ const Debug = {
                 { offset: 12, len: 1, desc: 'Scramble (0-16)' },
                 { offset: 13, len: 1, desc: 'Flags: bit2=BusyLock, bit5=FreqHop, bit6-7=PTT ID' },
                 { offset: 14, len: 1, desc: 'Flags: bit3=BW(inv), bit4=Power' },
-                { offset: 15, len: 1, desc: 'Reserved' }
+                { offset: 15, len: 1, desc: 'Modulation (0=FM, 1=AM)' }
             ]
         })),
 
@@ -123,7 +123,7 @@ const Debug = {
         { start: 0x195C, end: 0x195C, description: 'VFO A Scramble: 0=off, 1-16=level' },
         { start: 0x195D, end: 0x195D, description: 'VFO A Flags2: bit2=BusyLock' },
         { start: 0x195E, end: 0x195E, description: 'VFO A Flags3: bits0-1=OffsetDir(0=off,1=-,2=+), bit3=BW(1=N), bit4=Power(1=H)' },
-        { start: 0x195F, end: 0x195F, description: 'VFO A byte 15: unused (always 0x00)' },
+        { start: 0x195F, end: 0x195F, description: 'VFO A Modulation [38]: 0=FM, 1=AM' },
 
         // VFO B record (0x1960-0x196F) - same structure as VFO A
         { start: 0x1960, end: 0x1963, description: 'VFO B RX Frequency: 4-byte BCD little-endian (10Hz units)' },
@@ -133,7 +133,7 @@ const Debug = {
         { start: 0x196C, end: 0x196C, description: 'VFO B Scramble: 0=off, 1-16=level' },
         { start: 0x196D, end: 0x196D, description: 'VFO B Flags2: bit2=BusyLock' },
         { start: 0x196E, end: 0x196E, description: 'VFO B Flags3: bits0-1=OffsetDir(0=off,1=-,2=+), bit3=BW(1=N), bit4=Power(1=H)' },
-        { start: 0x196F, end: 0x196F, description: 'VFO B byte 15: unused (always 0x00)' },
+        { start: 0x196F, end: 0x196F, description: 'VFO B Modulation [38]: 0=FM, 1=AM' },
 
         // FM VFO frequency (0x1970-0x1971)
         { start: 0x1970, end: 0x1971, description: 'FM VFO frequency (16-bit BCD in 0.1MHz units)' },

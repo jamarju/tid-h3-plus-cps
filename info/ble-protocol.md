@@ -31,6 +31,10 @@ AT+BAUD?\r\n
 
 **Discovered via ODMaster console capture (January 2026)**
 
+**Write Protocol:**
+- MUST send 32-byte packets - radio ignores shorter ones
+- All write ranges should be 32-byte aligned
+
 ### Packet Format
 
 ```javascript

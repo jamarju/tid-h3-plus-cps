@@ -25,7 +25,6 @@ const BLE = {
     ],
 
     WRITE_RANGES_SETTINGS: [
-        [0x0000, 0x0020],  // Header with modulation at 0x1F
         [0x0C90, 0x0CD0],  // Function keys + main settings + VFO offsets + TX band limits
         [0x1800, 0x18E0],  // DTMF/ANI system (stun, kill, groups, BOT/EOT)
         [0x1950, 0x1980],  // VFO A/B records (0x1950-0x196F) + FM VFO (0x1970-0x1971)
@@ -376,15 +375,13 @@ const BLE = {
                 packet.set(paddedChunk, 4);
                 packet[4 + this.CHUNK_SIZE] = checksum;
 
-                console.log(`Write 0x${addr.toString(16).toUpperCase()}: ${actualLen} bytes (padded to 32), checksum 0x${checksum.toString(16).toUpperCase()}`);
                 await this.write(packet);
 
                 // Wait for ACK (0x06) after each packet
                 try {
                     await this.waitForAck(2000);
-                    console.log(`  ACK received`);
                 } catch (e) {
-                    console.error(`  NO ACK at 0x${addr.toString(16)}`);
+                    console.error(`Write failed at 0x${addr.toString(16)}: no ACK`);
                     throw new Error(`Write failed at address 0x${addr.toString(16)}: no ACK`);
                 }
 
@@ -444,7 +441,8 @@ const BLE = {
             pttId: 'OFF',
             scanAdd: true,
             name: '',
-            scramble: 0
+            scramble: 0,
+            modulation: 'FM'
         };
     },
 
@@ -480,13 +478,15 @@ const BLE = {
         const rxTone = (data[offset + 8] | (data[offset + 9] << 8));
         const txTone = (data[offset + 10] | (data[offset + 11] << 8));
 
-        // Bytes 12-14: Channel flags (VERIFIED mapping Jan 2026)
+        // Bytes 12-15: Channel flags (VERIFIED mapping Jan 2026)
         // Byte 12: Scramble value (0=off, 1-16=level)
         // Byte 13: bit 2=Busy Lock, bit 5=Freq Hop, bits 6-7=PTT ID
         // Byte 14: bit 3=Bandwidth (inverted), bit 4=Power
+        // Byte 15: Modulation (0=FM, 1=AM) - discovered Session 19
         const scrambleVal = data[offset + 12] || 0;
         const flags2 = data[offset + 13] || 0;
         const flags3 = data[offset + 14] || 0;
+        const modulation = data[offset + 15] || 0;
 
         // PTT ID: bits 6-7 of byte 13 (0=Off, 1=BOT, 2=EOT, 3=BOTH)
         const pttIdVal = (flags2 >> 6) & 0x03;
@@ -521,7 +521,8 @@ const BLE = {
             pttId: pttIdMap[pttIdVal],              // Byte 13, bits 6-7
             scanAdd: scanAdd,                       // From bitmap at 0x1920+
             name: name.trim(),
-            scramble: scrambleVal                   // Byte 12, value 0-16
+            scramble: scrambleVal,                  // Byte 12, value 0-16
+            modulation: modulation ? 'AM' : 'FM'   // Byte 15: 0=FM, 1=AM
         };
     },
 
@@ -559,6 +560,9 @@ const BLE = {
         // Offset value from separate location
         const offsetValue = this.decodeBCDFrequency(data, offsetValueAddr);
 
+        // Modulation (byte 15) - 0=FM, 1=AM
+        const modulation = data[offset + 15] || 0;
+
         return {
             rxFreq: rxFreq,
             rxTone: this.decodeTone(rxTone),
@@ -568,7 +572,8 @@ const BLE = {
             bandwidth: (flags3 & 0x08) ? 'N' : 'W', // Byte 14, bit 3
             txPower: (flags3 & 0x10) ? 'HIGH' : 'LOW', // Byte 14, bit 4
             offsetDir: offsetDirMap[offsetDir],
-            offset: offsetValue
+            offset: offsetValue,
+            modulation: modulation                  // Byte 15: 0=FM, 1=AM
         };
     },
 
@@ -817,8 +822,8 @@ const BLE = {
             // [37] D-RSP - 0xC9A: 0=null, 1=ring, 2=reply, 3=both
             dRsp: data[0xC9A] || 0,
 
-            // [38] Modulation - 0x1F: 0=fm, 1=am
-            modulation: data[0x1F] || 0,
+            // [38] Modulation - per-VFO at 0x195F/0x196F byte 15, NOT global at 0x1F
+            // (removed from settings - use vfoA.modulation / vfoB.modulation instead)
 
             // [39] 200Tx - 0xCAB bit 4: 0=off, 1=on
             tx200: !!(flags0xCAB & 0x10),
@@ -1175,7 +1180,8 @@ const BLE = {
         if (channel.txPower === 'HIGH') flags3 |= 0x10; // Bit 4
         buffer[offset + 14] = flags3;
 
-        buffer[offset + 15] = 0x00;
+        // Byte 15: Modulation (0=FM, 1=AM) - discovered Session 19
+        buffer[offset + 15] = channel.modulation === 'AM' ? 0x01 : 0x00;
         // Note: Scan Add is stored in bitmap at 0x1920+, encoded separately
     },
 
@@ -1225,8 +1231,8 @@ const BLE = {
         if (vfo.txPower === 'HIGH') flags3 |= 0x10;
         buffer[offset + 14] = flags3;
 
-        // Byte 15: Unknown, set to 0
-        buffer[offset + 15] = 0x00;
+        // Byte 15: Modulation (0=FM, 1=AM)
+        buffer[offset + 15] = (vfo.modulation || 0) & 0x01;
 
         // Offset value at separate address
         this.encodeBCDFrequency(buffer, offsetValueAddr, vfo.offset || 0);
@@ -1345,8 +1351,8 @@ const BLE = {
      * @param {Object} settings - Settings data
      */
     encodeSettings(buffer, offset, settings) {
-        // ===== 0x001F: Modulation [38] =====
-        buffer[0x1F] = settings.modulation || 0;
+        // ===== 0x001F: DO NOT WRITE - this is channel 2 data! =====
+        // Modulation [38] is per-VFO at byte 15 of VFO records (0x195F/0x196F)
 
         // ===== 0x0C90 block: Function keys, DTMF =====
         // 0xC91: PF1 Short Press [27]

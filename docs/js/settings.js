@@ -154,7 +154,7 @@ const Settings = {
         this.setSelectValue('stepFreq', this.settings.stepFreq);
         this.setSelectValue('tot', this.settings.tot);
         this.setSelectValue('pttDelay', this.settings.pttDelay);
-        this.setSelectValue('modulation', this.settings.modulation);
+        // Note: Modulation is per-VFO, set in VFO A/B sections below
 
         // Selects - VOX
         this.setSelectValue('voxGain', this.settings.voxGain);
@@ -208,8 +208,7 @@ const Settings = {
         // Checkboxes - Scan
         this.setCheckboxValue('tdr', this.settings.tdr);
 
-        // Checkboxes - AM Band / Only CH Mode
-        this.setCheckboxValue('amBand', this.settings.amBand);
+        // Checkboxes - Only CH Mode (AM Band removed - modulation is per-VFO/channel)
         this.setCheckboxValue('onlyChMode', this.settings.onlyChMode);
 
         // Checkboxes - Security
@@ -249,6 +248,7 @@ const Settings = {
         this.setSelectValue('vfoATxPower', vfoA.txPower || 'LOW');
         this.setSelectValue('vfoAScramble', vfoA.scramble || 0);
         this.setCheckboxValue('vfoABusyLock', vfoA.busyLock);
+        this.setSelectValue('vfoAModulation', vfoA.modulation || 0);
 
         // VFO B
         const vfoB = this.settings.vfoB || {};
@@ -263,6 +263,7 @@ const Settings = {
         this.setSelectValue('vfoBTxPower', vfoB.txPower || 'LOW');
         this.setSelectValue('vfoBScramble', vfoB.scramble || 0);
         this.setCheckboxValue('vfoBBusyLock', vfoB.busyLock);
+        this.setSelectValue('vfoBModulation', vfoB.modulation || 0);
 
         // Text inputs - TX Band Limits
         this.setTextValue('txVhfLow', this.settings.txVhfLow ? this.settings.txVhfLow.toFixed(1) : '');

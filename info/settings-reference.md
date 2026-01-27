@@ -43,7 +43,7 @@ This document maps ALL 42 radio menu settings to their options and current value
 | [35] | DCD | off, on | OFF |
 | [36] | D-HOLD | off, 5s, 10s, 15s | OFF |
 | [37] | D-RSP | null, ring, reply, both | Null |
-| [38] | Modulation | fm, am | FM |
+| [38] | Modulation | fm, am | FM | (per-VFO at 0x195F/0x196F, not global) |
 | [39] | 200Tx | off, on | OFF |
 | [40] | 350Tx | off, on | OFF |
 | [41] | 500Tx | off, on | OFF |
