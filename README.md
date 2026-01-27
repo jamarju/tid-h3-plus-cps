@@ -30,7 +30,11 @@ Configurations are saved as `.h3p` files - raw 16KB binary dumps of radio memory
 
 ## Development
 
-See [docs/](docs/) for memory maps and protocol documentation.
+See [info/](info/) for memory maps and protocol documentation.
+
+The actual app is in [`docs/`](docs/) due to limitation of GitHub Pages.
+
+Issues and pull requests are welcome!
 
 ## License
 
