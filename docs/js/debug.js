@@ -8,6 +8,11 @@
  */
 
 const Debug = {
+    traceEntries: [],
+    currentOperation: null,
+    currentProgress: 0,
+    traceDomInitialized: false,
+
     /**
      * Memory map definitions - describes what each byte/region means
      * Format: { start, end, description, type }
@@ -324,6 +329,109 @@ const Debug = {
      */
     escapeHtml(str) {
         return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    },
+
+    init() {
+        const clearBtn = document.getElementById('debugTraceClear');
+        if (clearBtn && !clearBtn.dataset.bound) {
+            clearBtn.addEventListener('click', () => this.clearTrace());
+            clearBtn.dataset.bound = '1';
+        }
+        this.renderTrace(true);
+    },
+
+    startOperation(type, details = '') {
+        this.currentOperation = type;
+        this.currentProgress = 0;
+        this.addTrace(`${type.toUpperCase()} start${details ? ' - ' + details : ''}`);
+    },
+
+    finishOperation(ok, message = '') {
+        const op = this.currentOperation ? this.currentOperation.toUpperCase() : 'OP';
+        this.addTrace(`${op} ${ok ? 'OK' : 'FAILED'}${message ? ' - ' + message : ''}`, ok ? 'success' : 'error');
+        this.currentOperation = null;
+        if (ok) {
+            this.currentProgress = 1;
+        }
+        this.renderTrace();
+    },
+
+    updateProgress(progress, label = '') {
+        this.currentProgress = Math.max(0, Math.min(progress || 0, 1));
+        if (label) {
+            this.addTrace(`${label} (${Math.round(this.currentProgress * 100)}%)`, 'progress');
+        } else {
+            this.renderTrace();
+        }
+    },
+
+    addTrace(message, level = '') {
+        const time = new Date().toLocaleTimeString();
+        const entry = { time, message, level };
+        this.traceEntries.push(entry);
+        this.renderTrace(false, entry);
+    },
+
+    clearTrace() {
+        this.traceEntries = [];
+        this.currentOperation = null;
+        this.currentProgress = 0;
+        this.traceDomInitialized = false;
+        this.renderTrace(true);
+    },
+
+    createTraceEntryElement(entry) {
+        const div = document.createElement('div');
+        div.className = `debug-trace-entry${entry.level ? ` ${entry.level}` : ''}`;
+        div.textContent = `[${entry.time}] ${entry.message}`;
+        return div;
+    },
+
+    renderTrace(forceFull = false, appendedEntry = null) {
+        const summaryEl = document.getElementById('debugTraceSummary');
+        const progressEl = document.getElementById('debugTraceProgressBar');
+        const logEl = document.getElementById('debugTraceLog');
+
+        if (summaryEl) {
+            if (this.currentOperation) {
+                summaryEl.textContent = `${this.currentOperation.toUpperCase()} in progress - ${Math.round(this.currentProgress * 100)}%`;
+            } else if (this.traceEntries.length > 0) {
+                const last = this.traceEntries[this.traceEntries.length - 1];
+                summaryEl.textContent = `${last.time} - ${last.message}`;
+            } else {
+                summaryEl.textContent = 'No active BLE operation';
+            }
+        }
+
+        if (progressEl) {
+            progressEl.style.width = `${this.currentProgress * 100}%`;
+        }
+
+        if (!logEl) return;
+
+        if (this.traceEntries.length === 0) {
+            logEl.innerHTML = '<div class="debug-trace-empty">Run Read or Write with the Debug tab open to capture the BLE trace.</div>';
+            this.traceDomInitialized = true;
+            return;
+        }
+
+        if (forceFull || !this.traceDomInitialized) {
+            logEl.innerHTML = '';
+            const fragment = document.createDocumentFragment();
+            for (const entry of this.traceEntries) {
+                fragment.appendChild(this.createTraceEntryElement(entry));
+            }
+            logEl.appendChild(fragment);
+            this.traceDomInitialized = true;
+        } else if (appendedEntry) {
+            const emptyState = logEl.querySelector('.debug-trace-empty');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            logEl.appendChild(this.createTraceEntryElement(appendedEntry));
+        }
+
+        logEl.scrollTop = logEl.scrollHeight;
     },
 
     /**

@@ -18,6 +18,9 @@ const App = {
         this.cacheElements();
         this.attachEventListeners();
         this.initializeData();
+        if (typeof Debug !== 'undefined' && typeof Debug.init === 'function') {
+            Debug.init();
+        }
         this.updateUI();
         this.updateGridState();
     },
@@ -181,9 +184,15 @@ const App = {
             this.showProgress(true);
             this.isReading = true;
             this.updateGridState();
+            if (typeof Debug !== 'undefined') {
+                Debug.startOperation('read');
+            }
 
             const memory = await BLE.readMemory((progress) => {
                 this.setProgress(progress);
+                if (typeof Debug !== 'undefined') {
+                    Debug.updateProgress(progress);
+                }
             });
 
             this.rawData = memory;
@@ -198,11 +207,17 @@ const App = {
             this.isReading = false;
             this.updateGridState();
             this.setStatus('Read complete - ' + memory.length + ' bytes');
+            if (typeof Debug !== 'undefined') {
+                Debug.finishOperation(true, memory.length + ' bytes');
+            }
         } catch (err) {
             this.showProgress(false);
             this.isReading = false;
             this.updateGridState();
             this.setStatus('Read failed: ' + err.message);
+            if (typeof Debug !== 'undefined') {
+                Debug.finishOperation(false, err.message);
+            }
         }
     },
 
@@ -230,6 +245,9 @@ const App = {
             const modeLabels = { all: 'all', settings: 'settings', channels: 'channels', fm: 'FM radio' };
             this.setStatus('Writing ' + modeLabels[mode] + '...');
             this.showProgress(true);
+            if (typeof Debug !== 'undefined') {
+                Debug.startOperation('write', 'mode=' + mode);
+            }
 
             const data = {
                 channels: Grid.getData(),
@@ -241,13 +259,22 @@ const App = {
 
             await BLE.writeMemory(memory, (progress) => {
                 this.setProgress(progress);
+                if (typeof Debug !== 'undefined') {
+                    Debug.updateProgress(progress);
+                }
             }, mode);
 
             this.showProgress(false);
             this.setStatus('Write complete (' + modeLabels[mode] + ')');
+            if (typeof Debug !== 'undefined') {
+                Debug.finishOperation(true, modeLabels[mode]);
+            }
         } catch (err) {
             this.showProgress(false);
             this.setStatus('Write failed: ' + err.message);
+            if (typeof Debug !== 'undefined') {
+                Debug.finishOperation(false, err.message);
+            }
         }
     },
 

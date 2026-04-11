@@ -761,9 +761,92 @@ body {
     padding: 0;
 }
 
+.debug-layout {
+    display: grid;
+    grid-template-columns: minmax(720px, 1fr) minmax(360px, 480px);
+    min-height: 100%;
+}
+
+.debug-trace {
+    padding: 12px 16px;
+    border-left: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.debug-trace-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.debug-trace-header .btn {
+    flex-shrink: 0;
+}
+
+.debug-trace-progress {
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.debug-trace-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-primary), #58c4ff);
+    transition: width 0.15s ease;
+}
+
+.debug-trace-log {
+    min-height: 240px;
+    height: 100%;
+    flex: 1;
+    overflow: auto;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.debug-trace-entry {
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text-secondary);
+}
+
+.debug-trace-entry + .debug-trace-entry {
+    margin-top: 4px;
+}
+
+.debug-trace-entry.error {
+    color: #ff9b9b;
+}
+
+.debug-trace-entry.success {
+    color: #9fe870;
+}
+
+.debug-trace-entry.progress {
+    color: #8ad3ff;
+}
+
+.debug-trace-empty {
+    color: var(--text-muted);
+}
+
 .hexdump {
     padding: 16px;
     min-height: 100%;
+    overflow: auto;
 }
 
 .hexdump-placeholder {
@@ -778,6 +861,23 @@ body {
     font-family: var(--font-mono);
     font-size: 12px;
     width: auto;
+}
+
+@media (max-width: 1400px) {
+    .debug-layout {
+        grid-template-columns: minmax(0, 1fr) 420px;
+    }
+}
+
+@media (max-width: 1100px) {
+    .debug-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .debug-trace {
+        border-left: 0;
+        border-top: 1px solid var(--border-color);
+    }
 }
 
 .hexdump-table th {

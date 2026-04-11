@@ -10,7 +10,7 @@
     <header class="header">
         <div class="header-left">
             <h1>Tidradio H3 Plus CPS</h1>
-            <span class="firmware-note" title="This software has been tested with H3 Plus firmware v1.0.45">Tested: FW v1.0.45</span>
+            <span class="firmware-note" title="This software has been tested with H3 Plus firmware v1.0.45 through v1.0.47">Tested: FW v1.0.45-1.0.47</span>
             <span class="connection-status" id="connectionStatus">Disconnected</span>
         </div>
         <div class="header-actions">
@@ -870,8 +870,22 @@
             </div>
             <div class="debug-container disabled" id="debugContainer">
                 <div class="panel-disabled-message" id="debugDisabledMessage">Read from radio or load a file to view memory</div>
-                <div class="hexdump" id="hexdump">
-                    <div class="hexdump-placeholder">Read from radio to view memory dump</div>
+                <div class="debug-layout">
+                    <div class="hexdump" id="hexdump">
+                        <div class="hexdump-placeholder">Read from radio to view memory dump</div>
+                    </div>
+                    <div class="debug-trace" id="debugTrace">
+                        <div class="debug-trace-header">
+                            <span id="debugTraceSummary">No active BLE operation</span>
+                            <button id="debugTraceClear" class="btn btn-small" type="button">Clear Log</button>
+                        </div>
+                        <div class="debug-trace-progress">
+                            <div class="debug-trace-progress-bar" id="debugTraceProgressBar"></div>
+                        </div>
+                        <div class="debug-trace-log" id="debugTraceLog">
+                            <div class="debug-trace-empty">Run Read or Write with the Debug tab open to capture the BLE trace.</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>

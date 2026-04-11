@@ -63,6 +63,14 @@ const BLE = {
     // Write state (for ACK handling)
     writeAckResolve: null,
     writeAckReject: null,
+    pendingAckCount: 0,
+
+    trace(message, level = '') {
+        console.log(`[BLE] ${message}`);
+        if (typeof Debug !== 'undefined' && typeof Debug.addTrace === 'function') {
+            Debug.addTrace(message, level);
+        }
+    },
 
     /**
      * Connect to the radio via BLE
@@ -124,6 +132,9 @@ const BLE = {
         this.service = null;
         this.notifyChar = null;
         this.writeChar = null;
+        this.writeAckResolve = null;
+        this.writeAckReject = null;
+        this.pendingAckCount = 0;
 
         if (typeof this.onDisconnect === 'function') {
             this.onDisconnect();
@@ -137,12 +148,22 @@ const BLE = {
     handleNotification(event) {
         const data = new Uint8Array(event.target.value.buffer);
 
+        if (!(data.length === 1 && data[0] === 0x06)) {
+            const hex = Array.from(data).map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+            this.trace(`< ${hex}`);
+        }
+
         // Handle ACK response (0x06) for write operations
-        if (data.length === 1 && data[0] === 0x06 && this.writeAckResolve) {
-            const resolve = this.writeAckResolve;
-            this.writeAckResolve = null;
-            this.writeAckReject = null;
-            resolve(true);
+        if (data.length === 1 && data[0] === 0x06) {
+            this.trace('< ACK (0x06)', 'success');
+            if (this.writeAckResolve) {
+                const resolve = this.writeAckResolve;
+                this.writeAckResolve = null;
+                this.writeAckReject = null;
+                resolve(true);
+            } else {
+                this.pendingAckCount++;
+            }
             return;
         }
 
@@ -154,6 +175,7 @@ const BLE = {
                 const addr = (addrHi << 8) | addrLo;
                 const len = data[3];
                 const payload = data.slice(4, 4 + len);
+                this.trace(`< memory block 0x${addr.toString(16).toUpperCase().padStart(4, '0')} (${len} bytes)`);
 
                 // Store data at correct offset
                 this.readBuffer.set(payload, addr);
@@ -212,13 +234,22 @@ const BLE = {
      */
     waitForAck(timeout = 2000) {
         return new Promise((resolve, reject) => {
+            if (this.pendingAckCount > 0) {
+                this.pendingAckCount--;
+                this.trace('... consumed queued ACK');
+                resolve(true);
+                return;
+            }
+
             this.writeAckResolve = resolve;
             this.writeAckReject = reject;
+            this.trace(`... waiting for ACK (${timeout}ms timeout)`);
 
             setTimeout(() => {
                 if (this.writeAckResolve) {
                     this.writeAckResolve = null;
                     this.writeAckReject = null;
+                    this.trace('! ACK timeout', 'error');
                     reject(new Error('ACK timeout'));
                 }
             }, timeout);
@@ -235,6 +266,8 @@ const BLE = {
             throw new Error('Not connected');
         }
 
+        this.trace('Read session started');
+
         this.progressCallback = onProgress;
         this.readBuffer = new Uint8Array(this.MEMORY_END);
 
@@ -244,18 +277,22 @@ const BLE = {
 
             try {
                 // Step 1: Send AT+BAUD?
+                this.trace('> AT+BAUD?');
                 await this.writeString('AT+BAUD?\r\n');
                 await this.delay(100);
 
                 // Step 2: Send handshake PVOJH\x5c\x14
+                this.trace('> handshake PVOJH');
                 await this.write(new Uint8Array([0x50, 0x56, 0x4F, 0x4A, 0x48, 0x5C, 0x14]));
                 await this.delay(100);
 
                 // Step 3: Send mode 0x02
+                this.trace('> enter read mode (0x02)');
                 await this.write(new Uint8Array([0x02]));
                 await this.delay(50);
 
                 // Step 4: Send mode 0x06
+                this.trace('> confirm read mode (0x06)');
                 await this.write(new Uint8Array([0x06]));
                 await this.delay(50);
 
@@ -265,11 +302,15 @@ const BLE = {
                     const addrLo = addr & 0xFF;
 
                     // R + addrHi + addrLo + 0x20 (32 bytes)
+                    if (addr === this.MEMORY_START || addr % 0x200 === 0) {
+                        this.trace(`> request memory block 0x${addr.toString(16).toUpperCase().padStart(4, '0')}`);
+                    }
                     await this.write(new Uint8Array([0x52, addrHi, addrLo, this.CHUNK_SIZE]));
                     await this.delay(30);
                 }
 
             } catch (err) {
+                this.trace(`Read session failed: ${err.message}`, 'error');
                 this.readBuffer = null;
                 this.readResolve = null;
                 this.readReject = null;
@@ -290,12 +331,16 @@ const BLE = {
             throw new Error('Not connected');
         }
 
+        this.trace(`Write session started (mode=${mode})`);
+
         // Handshake sequence (from ODMaster capture)
         // Step 1: AT+BAUD query
+        this.trace('> AT+BAUD?');
         await this.writeString('AT+BAUD?\r\n');
         await this.delay(100);
 
         // Step 2: Send PVOJH handshake
+        this.trace('> handshake PVOJH');
         await this.write(new Uint8Array([0x50, 0x56, 0x4F, 0x4A, 0x48, 0x5C, 0x14]));
         await this.delay(100);
 
@@ -305,13 +350,16 @@ const BLE = {
             await this.waitForAck(1000);
         } catch (e) {
             // Radio might already be ready, continue
+            this.trace('! no initial ACK, continuing anyway');
         }
+        this.trace('> enter write mode (0x02)');
         await this.write(new Uint8Array([0x02]));
         await this.delay(50);
 
         // Step 4: Wait for model string response, then send ACK
         // Radio responds with model info (e.g., "P31183")
         await this.delay(100);
+        this.trace('> ACK after model response wait (0x06)');
         await this.write(new Uint8Array([0x06]));
 
         // Step 5: Wait for ready ACK before starting writes
@@ -319,6 +367,7 @@ const BLE = {
             await this.waitForAck(1000);
         } catch (e) {
             // Continue anyway
+            this.trace('! no ready ACK, continuing anyway');
         }
 
         // Step 6: Write memory in chunks with checksum
@@ -328,18 +377,22 @@ const BLE = {
             case 'settings':
                 writeRanges = this.WRITE_RANGES_SETTINGS;
                 console.log('Write mode: Settings only');
+                this.trace('Write scope: settings only');
                 break;
             case 'channels':
                 writeRanges = this.WRITE_RANGES_CHANNELS;
                 console.log('Write mode: Channels only');
+                this.trace('Write scope: channels only');
                 break;
             case 'fm':
                 writeRanges = this.WRITE_RANGES_FM;
                 console.log('Write mode: FM Radio only');
+                this.trace('Write scope: FM radio only');
                 break;
             default:
                 writeRanges = this.WRITE_RANGES_ALL;
                 console.log('Write mode: All');
+                this.trace('Write scope: all supported ranges');
         }
 
         let totalBytes = 0;
@@ -349,6 +402,7 @@ const BLE = {
 
         let bytesWritten = 0;
         for (const [rangeStart, rangeEnd] of writeRanges) {
+            this.trace(`Write range: 0x${rangeStart.toString(16).toUpperCase().padStart(4, '0')}-0x${(rangeEnd - 1).toString(16).toUpperCase().padStart(4, '0')}`);
             for (let addr = rangeStart; addr < rangeEnd && addr < data.length; addr += this.CHUNK_SIZE) {
                 const addrHi = (addr >> 8) & 0xFF;
                 const addrLo = addr & 0xFF;
@@ -375,6 +429,7 @@ const BLE = {
                 packet.set(paddedChunk, 4);
                 packet[4 + this.CHUNK_SIZE] = checksum;
 
+                this.trace(`> write block 0x${addr.toString(16).toUpperCase().padStart(4, '0')} (checksum 0x${checksum.toString(16).toUpperCase().padStart(2, '0')})`);
                 await this.write(packet);
 
                 // Wait for ACK (0x06) after each packet
@@ -382,6 +437,7 @@ const BLE = {
                     await this.waitForAck(2000);
                 } catch (e) {
                     console.error(`Write failed at 0x${addr.toString(16)}: no ACK`);
+                    this.trace(`Write failed at 0x${addr.toString(16).toUpperCase().padStart(4, '0')}: radio did not ACK`, 'error');
                     throw new Error(`Write failed at address 0x${addr.toString(16)}: no ACK`);
                 }
 
