@@ -30,7 +30,7 @@ const BLE = {
         [0x1900, 0x1980],  // Channel valid + scan bitmaps + VFO frequencies
         [0x1C00, 0x1C40],  // Startup messages
         [0x1F00, 0x1F40],  // Repeater tail + secondary settings + bluetooth
-        [0x3000, 0x3020],  // Extended: active VFO, STE, alarm, PTT delay, talk around
+        [0x3000, 0x3024],  // Extended settings, including Morse configuration
     ],
 
     WRITE_RANGES_SETTINGS: [
@@ -39,7 +39,7 @@ const BLE = {
         [0x1950, 0x1980],  // VFO A/B records (0x1950-0x196F) + FM VFO (0x1970-0x1971)
         [0x1C00, 0x1C40],  // Startup messages
         [0x1F00, 0x1F40],  // Repeater tail + secondary settings + bluetooth
-        [0x3000, 0x3020],  // Extended settings (active VFO, STE, alarm, PTT delay, talk around)
+        [0x3000, 0x3024],  // Extended settings, including Morse configuration
     ],
 
     WRITE_RANGES_CHANNELS: [
@@ -788,7 +788,7 @@ const BLE = {
      *   0x1820-0x1822: ANI-Edit
      *   0x1C00-0x1C2F: Startup messages
      *   0x1F20-0x1F2A: Secondary settings
-     *   0x3000+: Extended settings (STE, PTT Delay, Alarm, Talk Around)
+     *   0x3000+: Extended settings (STE, PTT Delay, Alarm, Talk Around, Morse)
      *
      * @param {Uint8Array} data - Raw memory
      * @param {number} offset - Settings offset (unused, using absolute addresses)
@@ -804,6 +804,11 @@ const BLE = {
         const flags0xCAB = data[0xCAB] || 0;
         const flags0xCAF = data[0xCAF] || 0;
         const flags0x300A = data[0x300A] || 0;
+        const morseFlagsRaw = data[0x3022];
+        // Older images may leave this new area at 0xFF. Use the factory
+        // defaults for display, but retain the raw value for safe round trips.
+        const flags0x3022 = morseFlagsRaw === undefined || morseFlagsRaw === 0xFF ? 0x24 : morseFlagsRaw;
+        const morseThresholdRaw = data[0x3023];
 
         return {
             // Radio operating mode - 0xCA0 bits 3-4:
@@ -946,6 +951,17 @@ const BLE = {
             scanHangTime: data[0x1F2F] || 0,     // 0x1F2F: (seconds * 2) - 1, range 0-19
             scanFreqLower: data[0x1F2D] || 0,    // 0x1F2D: 8-bit MHz
             scanFreqUpper: (data[0x1F2B] || 0) | ((data[0x1F2C] || 0) << 8),  // 0x1F2B-0x1F2C: 16-bit LE MHz
+
+            // Morse settings added in firmware 1.0.50.
+            // 0x3023 uses 0xFF for the untouched factory default (Medium).
+            morseEnabled: !!(flags0x3022 & 0x01),
+            morseSpeed: (flags0x3022 >> 1) & 0x07,
+            morseTone: (flags0x3022 >> 4) & 0x07,
+            morseThreshold: morseThresholdRaw <= 4 ? morseThresholdRaw : 2,
+            morseFlagsRaw: morseFlagsRaw,
+            morseThresholdRaw: morseThresholdRaw,
+            morseSettingsTouched: false,
+            morseThresholdTouched: false,
 
             // VFO Settings
             activeVfo: data[0x3004] || 0,            // 0x3004: 0=A, 1=B
@@ -1670,6 +1686,26 @@ const BLE = {
 
         // 0x300C: Talk Around [25]
         buffer[0x300C] = settings.talkAround || 0;
+
+        // ===== 0x3022-0x3023: Morse settings (firmware 1.0.50) =====
+        // 0x3022: bit0=Morse, bits1-3=TX speed code, bits4-6=tone code, bit7 unknown
+        const morseFlags = buffer[0x3022] || 0;
+        if (!(settings.morseFlagsRaw === 0xFF && !settings.morseSettingsTouched)) {
+            const morseSpeed = Number.isInteger(settings.morseSpeed) ? settings.morseSpeed : ((morseFlags >> 1) & 0x07);
+            const morseTone = Number.isInteger(settings.morseTone) ? settings.morseTone : ((morseFlags >> 4) & 0x07);
+            let encodedMorseFlags = morseFlags & 0x80;
+            if (settings.morseEnabled) encodedMorseFlags |= 0x01;
+            encodedMorseFlags |= (morseSpeed & 0x07) << 1;
+            encodedMorseFlags |= (morseTone & 0x07) << 4;
+            buffer[0x3022] = encodedMorseFlags;
+        }
+
+        // 0x3023: RX threshold code. Preserve the factory 0xFF sentinel until
+        // the user explicitly changes the threshold in the CPS.
+        if (settings.morseThresholdTouched || settings.morseThresholdRaw !== 0xFF) {
+            const threshold = Number.isInteger(settings.morseThreshold) ? settings.morseThreshold : 2;
+            buffer[0x3023] = threshold & 0xFF;
+        }
     },
 
     /**

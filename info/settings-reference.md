@@ -49,6 +49,21 @@ This document maps ALL 42 radio menu settings to their options and current value
 | [41] | 500Tx | off, on | OFF |
 | [42] | Menu Color | blue, red, green, yellow, purple, orange, lightblue, cyan, gray, darkblue, lightgreen, brown, pink, B.red, G.blue, L.gray, LG.blue, LB.blue | Blue |
 
+## Firmware 1.0.50 Morse Settings
+
+These settings are added outside the original 1–42 menu list.
+
+| Setting | Options | Memory location | Encoding |
+|---------|---------|-----------------|----------|
+| Morse | off, on | 0x3022 bit 0 | 0=off, 1=on |
+| TX Speed | 5, 8, 12, 18, 24 WPM | 0x3022 bits 1–3 | Codes 0–4 in option order |
+| Tone Hz | 500, 600, 700, 800, 1000 Hz | 0x3022 bits 4–6 | Codes 0–4 in option order |
+| RX Threshold | Weak, Med-weak, Medium, Med-strong, Strong | 0x3023 | Codes 0–4 in option order; `0xFF` means untouched factory default |
+
+**Key TX** and **Edit TX** are operation screens, not persistent CPS
+settings. The Edit TX message is temporary and returns to `HELLO` after a
+restart.
+
 ---
 
 ## Setting Descriptions

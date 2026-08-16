@@ -199,7 +199,11 @@ const Debug = {
         { start: 0x3004, end: 0x3004, description: 'Active VFO: 0=A, 1=B' },
         { start: 0x300A, end: 0x300A, description: 'Flags: bit7=STE[23], bit4-5=AlarmMode[22]' },
         { start: 0x300B, end: 0x300B, description: 'PTT Delay [20]: bits0-5, value=(raw+1)*100ms' },
-        { start: 0x300C, end: 0x300C, description: 'Talk Around [25]: 0=off, 1=on' }
+        { start: 0x300C, end: 0x300C, description: 'Talk Around [25]: 0=off, 1=on' },
+
+        // Morse settings added in firmware 1.0.50
+        { start: 0x3022, end: 0x3022, description: 'Morse: bit0=on/off; bits1-3=TX speed (0=5,1=8,2=12,3=18,4=24 WPM); bits4-6=tone (0=500,1=600,2=700,3=800,4=1000 Hz); bit7 unknown' },
+        { start: 0x3023, end: 0x3023, description: 'Morse RX threshold: 0=Weak, 1=Med-weak, 2=Medium, 3=Med-strong, 4=Strong; 0xFF=untouched factory default' }
     ],
 
     // Build a lookup table for fast access

@@ -436,10 +436,31 @@ Note: H3-Plus has only low/high power (no mid power). H8 has 3 power levels.
 | 0x300A | Alarm mode | 22 | Bits 4–5: 0=on site, 2=tx alarm | [1] |
 | 0x300B | PTT delay | 20 | Bits 0–5: raw; value = (raw + 1) × 100 ms | [1] |
 | 0x300C | Talk around | 25 | 0=off, 1=on | [1] |
+| 0x3022 | Morse enable, TX speed, tone | Firmware 1.0.50 | Bit 0: Morse; bits 1–3: TX speed code; bits 4–6: tone code; bit 7 unknown | [1] |
+| 0x3023 | Morse RX threshold | Firmware 1.0.50 | 0=Weak, 1=Med-weak, 2=Medium, 3=Med-strong, 4=Strong; `0xFF` is the untouched factory default | [1] |
 
 ### 0x300A - Packed byte
 
 0x300A combines STE (bit 7) and Alarm mode (bits 4–5).
+
+### 0x3022–0x3023 - Morse settings (firmware 1.0.50)
+
+Full-dump comparisons on an H3 Plus running firmware 1.0.50 isolated the new
+Morse settings to these two bytes:
+
+- `0x3022` bit 0 enables Morse.
+- `0x3022` bits 1–3 store the TX speed code: 0=5, 1=8, 2=12, 3=18,
+  4=24 WPM.
+- `0x3022` bits 4–6 store the tone code: 0=500, 1=600, 2=700, 3=800,
+  4=1000 Hz.
+- `0x3023` stores the RX threshold code: 0=Weak, 1=Med-weak, 2=Medium,
+  3=Med-strong, 4=Strong. A value of `0xFF` is used until the threshold is
+  explicitly changed from the factory default.
+
+The radio's **Key TX** and **Edit TX** screens are operational features rather
+than persistent CPS settings. The Edit TX message is held temporarily and
+returns to `HELLO` after a restart; it does not appear in the 16 KiB
+configuration image.
 
 ## Undocumented / observed data regions (non-0xFF)
 

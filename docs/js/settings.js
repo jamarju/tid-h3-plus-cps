@@ -145,6 +145,12 @@ const Settings = {
         // Radio operating mode (0x0CA0 bits 3-4)
         this.setSelectValue('radioMode', this.settings.radioMode);
 
+        // Morse settings (firmware 1.0.50, 0x3022-0x3023)
+        this.setCheckboxValue('morseEnabled', this.settings.morseEnabled);
+        this.setSelectValue('morseSpeed', this.settings.morseSpeed);
+        this.setSelectValue('morseThreshold', this.settings.morseThreshold);
+        this.setSelectValue('morseTone', this.settings.morseTone);
+
         // Selects - Display
         this.setSelectValue('display', this.settings.display);
         this.setSelectValue('lightControl', this.settings.lightControl);
@@ -367,6 +373,9 @@ const Settings = {
 
             if (el.type === 'checkbox') {
                 this.settings[id] = el.checked;
+                if (id === 'morseEnabled') {
+                    this.settings.morseSettingsTouched = true;
+                }
             } else if (el.tagName === 'SELECT') {
                 // Handle hex values (like dtmfGroupCode)
                 if (el.value.startsWith('0x')) {
@@ -374,6 +383,12 @@ const Settings = {
                 } else {
                     const value = parseInt(el.value);
                     this.settings[id] = isNaN(value) ? el.value : value;
+                }
+                if (['morseSpeed', 'morseTone'].includes(id)) {
+                    this.settings.morseSettingsTouched = true;
+                }
+                if (id === 'morseThreshold') {
+                    this.settings.morseThresholdTouched = true;
                 }
             } else if (el.type === 'number') {
                 const value = parseInt(el.value);
@@ -555,6 +570,15 @@ const Settings = {
         }
         if (!['normal', 'ham', 'gmrs'].includes(this.settings.radioMode)) {
             errors.push('Radio operating mode must be NORMAL, HAM, or GMRS');
+        }
+        if (![0, 1, 2, 3, 4].includes(this.settings.morseSpeed)) {
+            errors.push('Morse TX speed is invalid');
+        }
+        if (![0, 1, 2, 3, 4].includes(this.settings.morseTone)) {
+            errors.push('Morse tone is invalid');
+        }
+        if (![0, 1, 2, 3, 4].includes(this.settings.morseThreshold)) {
+            errors.push('Morse RX threshold is invalid');
         }
         // Note: micGain and brightness use defaults until offsets are verified
 

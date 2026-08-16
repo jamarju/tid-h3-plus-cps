@@ -119,7 +119,13 @@ const App = {
             fmChannels: new Array(25).fill(0),
             fmVfoFreq: 0,
             fmMode: 0,
-            radioMode: 'normal'
+            radioMode: 'normal',
+            morseEnabled: false,
+            morseSpeed: 2,
+            morseTone: 2,
+            morseThreshold: 2,
+            morseThresholdRaw: 0xFF,
+            morseThresholdTouched: false
         };
 
         Grid.init(channels);

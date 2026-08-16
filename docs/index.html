@@ -10,7 +10,7 @@
     <header class="header">
         <div class="header-left">
             <h1>Tidradio H3 Plus CPS</h1>
-            <span class="firmware-note" title="This software has been tested with H3 Plus firmware v1.0.45 through v1.0.47">Tested: FW v1.0.45-1.0.47</span>
+            <span class="firmware-note" title="This software has been tested with H3 Plus firmware v1.0.45 through v1.0.50">Tested: FW v1.0.45-1.0.50</span>
             <span class="connection-status" id="connectionStatus">Disconnected</span>
         </div>
         <div class="header-actions">
@@ -85,6 +85,44 @@
                         </select>
                     </div>
                     <p class="setting-note">Same setting as the radio's startup menu: hold PTT and <strong>*</strong> while turning it on. It changes the radio's operating restrictions; changing the mode here does not replace your channel list.</p>
+                </div>
+                <div class="settings-group">
+                    <h3>Morse</h3>
+                    <div class="setting-row">
+                        <label for="morseEnabled" title="Enable the radio's Morse transmit and receive functions">Morse</label>
+                        <input type="checkbox" id="morseEnabled">
+                    </div>
+                    <div class="setting-row">
+                        <label for="morseSpeed" title="Morse transmit and decoding speed">TX Speed</label>
+                        <select id="morseSpeed">
+                            <option value="0">5 WPM</option>
+                            <option value="1">8 WPM</option>
+                            <option value="2">12 WPM</option>
+                            <option value="3">18 WPM</option>
+                            <option value="4">24 WPM</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="morseThreshold" title="Signal threshold used by the Morse decoder">RX Threshold</label>
+                        <select id="morseThreshold">
+                            <option value="0">Weak</option>
+                            <option value="1">Med-weak</option>
+                            <option value="2">Medium</option>
+                            <option value="3">Med-strong</option>
+                            <option value="4">Strong</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="morseTone" title="Audio and modulation tone used for Morse">Tone Hz</label>
+                        <select id="morseTone">
+                            <option value="0">500 Hz</option>
+                            <option value="1">600 Hz</option>
+                            <option value="2">700 Hz</option>
+                            <option value="3">800 Hz</option>
+                            <option value="4">1000 Hz</option>
+                        </select>
+                    </div>
+                    <p class="setting-note">Key TX and Edit TX are radio operation screens, not stored CPS settings. The Edit TX message is temporary and returns to HELLO after a restart.</p>
                 </div>
                 <div class="settings-group">
                     <h3>Display</h3>
