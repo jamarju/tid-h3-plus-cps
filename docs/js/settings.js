@@ -5,6 +5,14 @@
 const Settings = {
     // Current settings
     settings: null,
+    originalRadioMode: null,
+
+    radioModeLabels: {
+        normal: 'NORMAL',
+        ham: 'HAM',
+        gmrs: 'GMRS',
+        unknown: 'UNKNOWN'
+    },
 
     // Function key SHORT press options [27, 29] - different from long press!
     // Encoding: 0=none, 1=fm radio, 2=lamp, 3=tone, 4=alarm, 5=weather, 7=ptt2, 8=od ptt (gap at 6)
@@ -76,6 +84,7 @@ const Settings = {
      */
     init(settings) {
         this.settings = settings;
+        this.originalRadioMode = settings?.radioMode ?? null;
         this.populateKeySelects();
         this.populateToneSelects();
         this.loadToForm();
@@ -132,6 +141,9 @@ const Settings = {
      */
     loadToForm() {
         if (!this.settings) return;
+
+        // Radio operating mode (0x0CA0 bits 3-4)
+        this.setSelectValue('radioMode', this.settings.radioMode || 'unknown');
 
         // Selects - Display
         this.setSelectValue('display', this.settings.display);
@@ -481,6 +493,7 @@ const Settings = {
      */
     update(settings) {
         this.settings = settings;
+        this.originalRadioMode = settings?.radioMode ?? null;
         this.loadToForm();
     },
 
@@ -490,6 +503,32 @@ const Settings = {
      */
     getData() {
         return this.settings;
+    },
+
+    /**
+     * Check whether the selected operating mode differs from the last read/load.
+     * @returns {boolean} True when a mode change is pending
+     */
+    hasRadioModeChange() {
+        return this.originalRadioMode !== null &&
+            this.settings?.radioMode !== this.originalRadioMode;
+    },
+
+    /**
+     * Get a human-readable operating mode label.
+     * @param {string} mode - Internal mode value
+     * @returns {string} Display label
+     */
+    getRadioModeLabel(mode = this.settings?.radioMode) {
+        return this.radioModeLabels[mode] || 'UNKNOWN';
+    },
+
+    /**
+     * Mark the selected mode as written. A fresh Read is still recommended
+     * because the radio may load mode-specific presets after reboot.
+     */
+    markRadioModeWritten() {
+        this.originalRadioMode = this.settings?.radioMode ?? null;
     },
 
     /**
@@ -513,6 +552,9 @@ const Settings = {
         // Check numeric ranges (relaxed validation while mapping memory layout)
         if (this.settings.squelchLevel < 0 || this.settings.squelchLevel > 9) {
             errors.push('Squelch level must be 0-9');
+        }
+        if (!['normal', 'ham', 'gmrs'].includes(this.settings.radioMode)) {
+            errors.push('Radio operating mode must be NORMAL, HAM, or GMRS');
         }
         // Note: micGain and brightness use defaults until offsets are verified
 

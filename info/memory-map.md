@@ -109,7 +109,7 @@ Record layout (offsets are relative to a channel’s base):
 | 0x0C9B | DTMF speed | 34 | 0=80ms, 1=90ms, 2=100ms, 3=110ms, 4=120ms, 5=130ms, 6=140ms, 7=150ms | [1] |
 | 0x0C9D | Brightness | 13 | Inverted: display = 5 − memory | [1] |
 | 0x0CA0 | DTMFST | 19 | Bit 1: 0=off, 1=on | [1] |
-| 0x0CA0 | Unknown |  | Bit 4: purpose unknown; Windows CPS flipped 0→1 when writing unchanged data (possibly related to NORMAL vs HAM mode) | [1][3] |
+| 0x0CA0 | Radio operating mode + DTMFST |  | Bit 4 (`0x10`): HAM; bit 3 (`0x08`): GMRS; both clear: NORMAL; bit 1: DTMFST | [1][2] |
 | 0x0CA0 | Disp LCD (RX) |  | Bit 6: 0=off, 1=on | [1] |
 | 0x0CA0 | Disp LCD (TX) |  | Bit 7: 0=off, 1=on | [1] |
 | 0x0CA1 | Voice | 11 | Bit 0: 0=off, 1=on | [1] |
@@ -157,6 +157,21 @@ Short press options differ from long press options (long press has “cancel sq�
 
 CHIRP driver notes suggest different bit positions for some functions (e.g. FM mode and work-mode bits, or power-on display bits). These notes conflict with manual testing for the mappings above. See [2].
 
+### 0x0CA0 - Radio operating mode (confirmed on hardware)
+
+Complete 16 KiB BLE dumps from the same H3 Plus on 2026-08-16 produced these
+values:
+
+| Mode | Value | Mode bit |
+|------|-------|----------|
+| HAM | `0xD2` | bit 4 (`0x10`) set |
+| NORMAL | `0xC2` | bits 4 and 3 clear |
+| GMRS | `0xCA` | bit 3 (`0x08`) set |
+
+HAM versus NORMAL changed no other byte. Switching to GMRS also loaded the
+radio's GMRS presets into channels 1-30, their names, and VFO A/B frequencies.
+The valid-channel bitmap remained unchanged.
+
 ### 0x0CB0–0x0CB7 - VFO offset example
 
 - 5.0 MHz offset = 500000 (10 Hz units)
@@ -178,7 +193,10 @@ Windows CPS changes these values when switching radio modes.
   - VHF: 144.0–148.0 MHz → `14 40 14 80`
   - UHF: 420.0–450.0 MHz → `42 00 45 00`
 
-Note: This region is not documented in CHIRP.
+Note: This region is not documented in CHIRP. In the complete HAM/NORMAL
+comparison on the tested H3 Plus, these eight bytes remained
+`13 60 17 40 20 00 60 00` in both modes; the effective mode change was the
+flag at `0x0CA0`.
 
 ### 0x0CD0–0x0D33 - FM broadcast channel encoding examples
 

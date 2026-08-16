@@ -14,6 +14,15 @@ const BLE = {
     CHUNK_SIZE: 32,
     TOTAL_CHANNELS: 199,
 
+    // Operating mode flags in byte 0x0CA0.
+    // NORMAL leaves both bits clear; HAM and GMRS are mutually exclusive.
+    RADIO_MODE_MASK: 0x18,
+    RADIO_MODE_BITS: Object.freeze({
+        normal: 0x00,
+        gmrs: 0x08,
+        ham: 0x10
+    }),
+
     // Write ranges by mode
     WRITE_RANGES_ALL: [
         [0x0000, 0x13C0],  // Channels, names, settings
@@ -70,6 +79,35 @@ const BLE = {
         if (typeof Debug !== 'undefined' && typeof Debug.addTrace === 'function') {
             Debug.addTrace(message, level);
         }
+    },
+
+    /**
+     * Decode the operating mode flags stored in byte 0x0CA0.
+     * @param {number} flags - Raw byte value
+     * @returns {string} 'normal', 'gmrs', 'ham', or 'unknown'
+     */
+    decodeRadioMode(flags) {
+        switch (flags & this.RADIO_MODE_MASK) {
+            case this.RADIO_MODE_BITS.normal:
+                return 'normal';
+            case this.RADIO_MODE_BITS.gmrs:
+                return 'gmrs';
+            case this.RADIO_MODE_BITS.ham:
+                return 'ham';
+            default:
+                return 'unknown';
+        }
+    },
+
+    /**
+     * Get the raw mode bits for a UI mode value.
+     * @param {string} mode - 'normal', 'gmrs', or 'ham'
+     * @returns {number|null} Mode bits, or null for an unsupported value
+     */
+    getRadioModeBits(mode) {
+        return Object.prototype.hasOwnProperty.call(this.RADIO_MODE_BITS, mode)
+            ? this.RADIO_MODE_BITS[mode]
+            : null;
     },
 
     /**
@@ -768,6 +806,11 @@ const BLE = {
         const flags0x300A = data[0x300A] || 0;
 
         return {
+            // Radio operating mode - 0xCA0 bits 3-4:
+            // 0x00=NORMAL, 0x08=GMRS, 0x10=HAM
+            radioMode: this.decodeRadioMode(flags0xCA0),
+            radioModeBits: flags0xCA0 & this.RADIO_MODE_MASK,
+
             // [1] Squelch Level - 0xCA9: 0=off, 1-9=level
             squelchLevel: data[0xCA9] || 0,
 
@@ -1439,8 +1482,12 @@ const BLE = {
         buffer[0xC9D] = 5 - (settings.brightness || 1);
 
         // ===== 0x0CA0 block: Packed flag bytes =====
-        // 0xCA0: bit 1 = DTMFST [19]
+        // 0xCA0: bits 3-4 = radio mode, bit 1 = DTMFST [19]
         let flags0xCA0 = buffer[0xCA0] || 0;
+        const radioModeBits = this.getRadioModeBits(settings.radioMode);
+        if (radioModeBits !== null) {
+            flags0xCA0 = (flags0xCA0 & ~this.RADIO_MODE_MASK) | radioModeBits;
+        }
         if (settings.dtmfSideTone) flags0xCA0 |= 0x02; else flags0xCA0 &= ~0x02;
         buffer[0xCA0] = flags0xCA0;
 
