@@ -143,7 +143,7 @@ const Settings = {
         if (!this.settings) return;
 
         // Radio operating mode (0x0CA0 bits 3-4)
-        this.setSelectValue('radioMode', this.settings.radioMode || 'unknown');
+        this.setSelectValue('radioMode', this.settings.radioMode);
 
         // Selects - Display
         this.setSelectValue('display', this.settings.display);
@@ -525,7 +525,7 @@ const Settings = {
 
     /**
      * Mark the selected mode as written. A fresh Read is still recommended
-     * because the radio may load mode-specific presets after reboot.
+     * because the radio applies its operating profile when it starts.
      */
     markRadioModeWritten() {
         this.originalRadioMode = this.settings?.radioMode ?? null;

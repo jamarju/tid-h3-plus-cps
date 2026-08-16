@@ -34,7 +34,6 @@ const App = {
             btnRead: document.getElementById('btnRead'),
             btnWrite: document.getElementById('btnWrite'),
             btnWriteDropdown: document.getElementById('btnWriteDropdown'),
-            btnApplyRadioMode: document.getElementById('btnApplyRadioMode'),
             writeMenu: document.getElementById('writeMenu'),
             btnLoad: document.getElementById('btnLoad'),
             btnSave: document.getElementById('btnSave'),
@@ -65,7 +64,6 @@ const App = {
         // Read/Write
         this.elements.btnRead.addEventListener('click', () => this.handleRead());
         this.elements.btnWrite.addEventListener('click', () => this.handleWrite('all'));
-        this.elements.btnApplyRadioMode.addEventListener('click', () => this.handleRadioModeWrite());
 
         // Write dropdown
         this.elements.btnWriteDropdown.addEventListener('click', (e) => {
@@ -136,7 +134,6 @@ const App = {
         this.elements.btnRead.disabled = !this.connected;
         this.elements.btnWrite.disabled = !this.connected;
         this.elements.btnWriteDropdown.disabled = !this.connected;
-        this.elements.btnApplyRadioMode.disabled = !this.connected || !this.rawData || this.isReading;
 
         this.elements.connectionStatus.textContent = this.connected ? 'Connected' : 'Disconnected';
         this.elements.connectionStatus.classList.toggle('connected', this.connected);
@@ -225,23 +222,6 @@ const App = {
         }
     },
 
-    /**
-     * Handle write to radio
-     * @param {string} mode - Write mode: 'all', 'settings', or 'channels'
-     */
-    async handleRadioModeWrite() {
-        if (!this.connected || !this.rawData) return;
-
-        if (!Settings.hasRadioModeChange()) {
-            this.setStatus('Select a different radio mode first');
-            return;
-        }
-
-        // The regular write path supplies the safety confirmation and uses the
-        // settings range, which includes the aligned 0x0CA0 mode byte.
-        await this.handleWrite('settings');
-    },
-
     async handleWrite(mode = 'all') {
         if (!this.connected) return;
 
@@ -261,16 +241,18 @@ const App = {
 
             const radioModeChanged = Settings.hasRadioModeChange();
             if (radioModeChanged && !['all', 'settings'].includes(mode)) {
-                this.setStatus('Mode changes require Write All or Settings Only');
+                this.setStatus('Choose Settings Only or Write All to change the radio mode');
                 return;
             }
 
             const targetRadioMode = Settings.getRadioModeLabel();
             if (radioModeChanged && !window.confirm(
-                `Change the radio operating mode to ${targetRadioMode}?\n\n` +
-                'This writes the mode flag at 0x0CA0. The radio may load ' +
-                'mode-specific channel presets, and must be powered off and ' +
-                'on before reading it again. Make sure you have a backup.\n\n' +
+                `Change the radio mode to ${targetRadioMode}?\n\n` +
+                'This is the same mode selection available on the radio by ' +
+                'holding PTT and * while turning it on. It affects which ' +
+                'frequencies the radio may transmit on. Restart the radio ' +
+                'after writing, then Read it again so the CPS matches it ' +
+                'before making further changes.\n\n' +
                 'Continue?'
             )) {
                 this.setStatus('Radio mode change cancelled');
@@ -302,7 +284,7 @@ const App = {
             this.showProgress(false);
             if (radioModeChanged) {
                 Settings.markRadioModeWritten();
-                this.setStatus('Mode written (' + targetRadioMode + ') - power-cycle, then Read');
+                this.setStatus('Mode written (' + targetRadioMode + ') - restart the radio, then Read again');
             } else {
                 this.setStatus('Write complete (' + modeLabels[mode] + ')');
             }
@@ -476,7 +458,6 @@ const App = {
 
         // Update Save button
         this.elements.btnSave.disabled = !hasData;
-        this.elements.btnApplyRadioMode.disabled = !this.connected || !hasData || this.isReading;
 
         // Update all four panels
         this.elements.gridContainer.classList.toggle('disabled', isDisabled);

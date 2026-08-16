@@ -74,20 +74,17 @@
         <section id="settingsPanel" class="panel active">
             <div class="settings-container disabled" id="settingsContainer">
                 <div class="panel-disabled-message" id="settingsDisabledMessage">Read from radio or load a file to edit settings</div>
-                <div class="settings-group radio-mode-group">
-                    <h3>Radio Operating Mode</h3>
+                <div class="settings-group">
+                    <h3>Operating Mode</h3>
                     <div class="setting-row">
-                        <label for="radioMode" title="Operating mode controls the radio's transmit permissions: NORMAL is unlocked, HAM is limited to amateur bands, and GMRS uses the GMRS profile.">Mode</label>
+                        <label for="radioMode" title="This is the same mode selection available from the radio's startup menu.">Mode</label>
                         <select id="radioMode">
                             <option value="normal">NORMAL</option>
                             <option value="ham">HAM</option>
                             <option value="gmrs">GMRS</option>
-                            <option value="unknown" disabled>Unknown</option>
                         </select>
                     </div>
-                    <button id="btnApplyRadioMode" class="btn mode-write-button" disabled>Write Mode (Settings)</button>
-                    <p class="mode-warning">Writes the mode flag at <code>0x0CA0</code> using the settings range. After writing, power-cycle the radio and press Read again. GMRS may load its own channel presets.</p>
-                    <p class="mode-codes">NORMAL <code>0xC2</code> · HAM <code>0xD2</code> · GMRS <code>0xCA</code></p>
+                    <p class="setting-note">Same setting as the radio's startup menu: hold PTT and <strong>*</strong> while turning it on. It changes the radio's operating restrictions; changing the mode here does not replace your channel list.</p>
                 </div>
                 <div class="settings-group">
                     <h3>Display</h3>

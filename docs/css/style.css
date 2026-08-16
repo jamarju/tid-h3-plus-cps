@@ -538,37 +538,11 @@ body {
     border-bottom: 1px solid var(--border-color);
 }
 
-.radio-mode-group {
-    border-color: rgba(255, 152, 0, 0.65);
-}
-
-.mode-write-button {
-    width: 100%;
-    margin-top: 8px;
-    border-color: var(--accent-warning);
-    color: var(--accent-warning);
-}
-
-.mode-write-button:hover:not(:disabled) {
-    background: rgba(255, 152, 0, 0.12);
-    border-color: var(--accent-warning);
-}
-
-.mode-warning,
-.mode-codes {
+.setting-note {
     margin-top: 10px;
     color: var(--text-muted);
     font-size: 11px;
-}
-
-.mode-warning {
-    color: var(--accent-warning);
-}
-
-.mode-warning code,
-.mode-codes code {
-    font-family: var(--font-mono);
-    color: var(--text-secondary);
+    line-height: 1.4;
 }
 
 .setting-row {

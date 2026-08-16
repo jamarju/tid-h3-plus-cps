@@ -168,9 +168,14 @@ values:
 | NORMAL | `0xC2` | bits 4 and 3 clear |
 | GMRS | `0xCA` | bit 3 (`0x08`) set |
 
-HAM versus NORMAL changed no other byte. Switching to GMRS also loaded the
-radio's GMRS presets into channels 1-30, their names, and VFO A/B frequencies.
-The valid-channel bitmap remained unchanged.
+HAM versus NORMAL changed no other byte. The standalone GMRS dump also contained
+GMRS presets in channels 1-30, their names, and VFO A/B frequencies, while the
+valid-channel bitmap remained unchanged. A follow-up test restored a custom
+channel backup, changed NORMAL to GMRS through the web CPS settings write, and
+confirmed after restarting and reading again that the existing channels were
+preserved and no GMRS presets were inserted. The source of the presets in the
+standalone GMRS dump is therefore not established; they are not an automatic
+side effect of the web CPS mode-only write.
 
 ### 0x0CB0–0x0CB7 - VFO offset example
 
